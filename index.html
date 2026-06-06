@@ -1224,14 +1224,23 @@ if ('speechSynthesis' in window) {
   _tryCache();
   window.speechSynthesis.onvoiceschanged = _tryCache;
 }
-function _getVoice(langPrefix, namePattern) {
+
+function _pickEnVoice() {
   const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
-  if (namePattern) {
-    const hit = voices.find(v => v.lang.startsWith(langPrefix) && namePattern.test(v.name));
-    if (hit) return hit;
-  }
-  return voices.find(v => v.lang.startsWith(langPrefix) && v.localService) ||
-         voices.find(v => v.lang.startsWith(langPrefix)) || null;
+  // Priority: exact en-US female local → exact en-US local → exact en-US → any en female local → any en
+  return voices.find(v => v.lang === 'en-US' && /samantha|zira|susan|karen|victoria|serena|female|woman/i.test(v.name) && v.localService) ||
+         voices.find(v => v.lang === 'en-US' && v.localService) ||
+         voices.find(v => v.lang === 'en-US') ||
+         voices.find(v => v.lang.startsWith('en') && v.localService) ||
+         voices.find(v => v.lang.startsWith('en')) || null;
+}
+
+function _pickZhVoice() {
+  const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
+  // Priority: exact zh-TW local (Meijia on iPad, Hanhan on Windows) → exact zh-TW → any zh
+  return voices.find(v => v.lang === 'zh-TW' && v.localService) ||
+         voices.find(v => v.lang === 'zh-TW') ||
+         voices.find(v => v.lang.startsWith('zh')) || null;
 }
 
 function speakWord(word, zh, delayMs = 0) {
@@ -1244,16 +1253,16 @@ function speakWord(word, zh, delayMs = 0) {
     uttEn.lang  = 'en-US';
     uttEn.rate  = 0.85;
     uttEn.pitch = 1.1;
-    // Note: do NOT set uttEn.voice — let browser pick default en-US voice
+    const enVoice = _pickEnVoice();
+    if (enVoice) uttEn.voice = enVoice;
     window.speechSynthesis.speak(uttEn);
 
     if (zh) {
-      // Queue Chinese immediately after — speechSynthesis plays them in order
       const uttZh = new SpeechSynthesisUtterance(zh);
       uttZh.lang  = 'zh-TW';
       uttZh.rate  = 0.9;
       uttZh.pitch = 1.1;
-      const zhVoice = _getVoice('zh', null);
+      const zhVoice = _pickZhVoice();
       if (zhVoice) uttZh.voice = zhVoice;
       window.speechSynthesis.speak(uttZh);
     }
