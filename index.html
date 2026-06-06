@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>✨ Spelling Star Adventure</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI', cursive;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px 10px;
+}
+
+.screen { display: none; width: 100%; max-width: 820px; }
+.screen.active { display: block; }
+
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+h1 { font-size: 2.2em; text-align: center; color: #5c35a0; margin-bottom: 8px; line-height: 1.3; }
+h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; }
+
+.btn {
+  display: inline-block;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1em;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  font-weight: bold;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+
+.btn-primary   { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+.btn-success   { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #155724; }
+.btn-warning   { background: linear-gradient(135deg, #f7971e, #ffd200); color: #5c3d00; }
+.btn-secondary { background: #e8e8e8; color: #555; }
+.btn-info      { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #003c5c; }
+.btn-reveal    { background: linear-gradient(135deg, #a18cd1, #fbc2eb); color: #3d0066; }
+
+/* ---- Welcome ---- */
+.list-tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; }
+.tab {
+  padding: 9px 24px; border-radius: 20px; cursor: pointer;
+  font-family: inherit; font-size: 1em; border: 2px solid #ccc;
+  background: white; color: #555; font-weight: bold; transition: all 0.2s;
+}
+.tab.active { background: #764ba2; color: white; border-color: #764ba2; }
+
+.week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 12px; }
+.week-btn {
+  padding: 14px 10px; background: linear-gradient(135deg, #e0f7fa, #e8f5e9);
+  border: 2px solid #ccc; border-radius: 14px; cursor: pointer;
+  text-align: center; transition: all 0.15s; font-family: inherit;
+  font-size: 0.88em; font-weight: bold; color: #444; line-height: 1.4;
+}
+.week-btn:hover { border-color: #764ba2; transform: scale(1.04); }
+.week-btn.selected { border-color: #764ba2; background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+.week-btn.all-btn { background: linear-gradient(135deg, #ffe0b2, #fff9c4); }
+.week-btn.all-btn.selected { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+
+.btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+
+/* ---- Tiles ---- */
+.tile {
+  display: inline-block; padding: 10px 16px; margin: 5px;
+  border-radius: 12px; font-size: 1.35em; font-weight: bold;
+  cursor: pointer; transition: transform 0.12s, opacity 0.12s;
+  user-select: none; border: 3px solid transparent; letter-spacing: 0.5px;
+}
+.tile:hover { transform: scale(1.1) translateY(-3px); }
+.tile.t-r { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+.tile.t-p { background: #fff3e0; color: #bf360c; border-color: #ffcc80; }
+.tile.t-s { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+.tile.t-c { background: #f3e5f5; color: #4a148c; border-color: #ce93d8; }
+.tile.used { opacity: 0.25; cursor: default; transform: none !important; }
+.tile.placed { opacity: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.tile.placed:hover { transform: scale(1.05) translateY(-2px); }
+
+/* ---- Answer zone ---- */
+.answer-zone {
+  min-height: 78px; border: 3px dashed #bbb; border-radius: 16px;
+  padding: 12px; margin: 14px 0; display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: center; background: #fafafa;
+  transition: border-color 0.3s, background 0.3s;
+}
+.answer-zone.correct { border-color: #43a047; background: #f1fff4; border-style: solid; }
+.answer-zone.wrong   { border-color: #e53935; background: #fff5f5; border-style: solid; }
+
+.scramble-zone {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  padding: 12px 8px; min-height: 65px; background: #f5f5f5;
+  border-radius: 14px; margin: 8px 0;
+}
+
+/* ---- Top bar ---- */
+.top-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; padding: 10px 14px;
+  background: linear-gradient(135deg, #fff9c4, #fffde7);
+  border-radius: 12px; flex-wrap: wrap; gap: 8px;
+}
+.progress-text { font-size: 1em; color: #555; font-weight: bold; }
+.stars-display { font-size: 1.2em; }
+
+/* ---- Hint card ---- */
+.hint-card {
+  border-radius: 16px; padding: 16px 20px; margin: 12px 0;
+  font-size: 1.05em; line-height: 1.7; position: relative;
+}
+.hint-card.example {
+  background: #e8f4fd; border-left: 5px solid #2196f3;
+  color: #0d3c61;
+}
+.hint-card.definition {
+  background: #fff8e1; border-left: 5px solid #ffc107;
+  color: #4a3000;
+}
+.hint-card .blank {
+  display: inline-block;
+  min-width: 90px; height: 26px;
+  border-bottom: 3px solid #1565c0;
+  vertical-align: bottom; margin: 0 4px;
+  background: rgba(21,101,192,0.06);
+  border-radius: 4px 4px 0 0;
+}
+.hint-label {
+  font-size: 0.75em; font-weight: bold; text-transform: uppercase;
+  letter-spacing: 1px; opacity: 0.6; margin-bottom: 6px;
+}
+.hint-toggle {
+  display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+}
+.htab {
+  padding: 5px 14px; border-radius: 20px; border: 2px solid #bbb;
+  background: white; color: #777; font-family: inherit; font-size: 0.85em;
+  cursor: pointer; font-weight: bold; transition: all 0.15s;
+}
+.htab.on { background: #764ba2; color: white; border-color: #764ba2; }
+
+/* ---- Reveal word area ---- */
+.reveal-area {
+  text-align: center; margin: 6px 0;
+}
+.revealed-word {
+  display: inline-block; font-size: 2em; font-weight: bold;
+  color: #3c1c7a; background: #f0ebff; padding: 6px 24px;
+  border-radius: 12px; letter-spacing: 2px;
+  border: 2px dashed #9575cd;
+}
+
+/* ---- Feedback ---- */
+.feedback {
+  text-align: center; font-size: 1.35em; font-weight: bold;
+  min-height: 40px; padding: 8px; border-radius: 12px; margin: 8px 0;
+}
+.feedback.ok  { color: #2e7d32; background: #c8e6c9; }
+.feedback.err { color: #c62828; background: #ffcdd2; }
+
+/* ---- Post-correct info ---- */
+.info-box {
+  border-radius: 12px; padding: 10px 16px; margin: 10px 0;
+  font-size: 0.92em; color: #555; line-height: 1.6;
+}
+.info-box.green { background: #e8f5e9; border-left: 4px solid #66bb6a; }
+
+/* ---- Legend ---- */
+.legend { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 6px 0; font-size: 0.82em; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 13px; height: 13px; border-radius: 4px; border: 2px solid; }
+
+/* ---- Study mode ---- */
+.study-card {
+  background: linear-gradient(135deg, #f5f7fa, #dde3ef);
+  border-radius: 20px; padding: 24px; text-align: center; margin: 12px 0;
+}
+.study-word { font-size: 2.4em; font-weight: bold; color: #2c3e50; margin-bottom: 8px; letter-spacing: 1px; }
+.study-dot  { font-size: 1.4em; color: #777; margin-bottom: 14px; letter-spacing: 3px; }
+
+/* ---- Results ---- */
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-top: 16px; max-height: 320px; overflow-y: auto; }
+.result-item { padding: 9px 13px; border-radius: 10px; font-size: 0.9em; display: flex; align-items: center; gap: 7px; }
+.result-item.ok-r  { background: #c8e6c9; }
+.result-item.err-r { background: #ffcdd2; }
+.score-bar-wrap { background: #eee; border-radius: 20px; height: 18px; margin: 12px 0; overflow: hidden; }
+.score-bar { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #43e97b, #38f9d7); transition: width 1s ease; }
+
+/* ---- Animations ---- */
+@keyframes pop   { 0%{transform:scale(1)} 40%{transform:scale(1.15)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.pop   { animation: pop   0.4s ease; }
+.shake { animation: shake 0.4s ease; }
+
+.week-label { text-align: center; font-size: 0.85em; color: #999; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ====== WELCOME ====== -->
+<div id="screen-welcome" class="screen active">
+<div class="card">
+  <h1>🌟 Spelling Star<br>Adventure 🌟</h1>
+  <p style="text-align:center;color:#888;margin-bottom:22px;font-size:1.05em">Practice spelling with syllables! 🎉</p>
+
+  <div class="list-tabs">
+    <button class="tab active" id="tab-FET" onclick="selectList('FET')">📚 FET List</button>
+    <button class="tab"        id="tab-CET" onclick="selectList('CET')">📖 CET List</button>
+  </div>
+
+  <div style="text-align:center;color:#666;font-size:0.95em;margin-bottom:8px">Choose weeks to practice (or pick All):</div>
+  <div id="week-grid" class="week-grid"></div>
+
+  <div class="btn-row" style="margin-top:22px">
+    <button class="btn btn-success" onclick="startGame('study')">📖 Study First</button>
+    <button class="btn btn-primary" onclick="startGame('practice')">🎮 Play Game!</button>
+  </div>
+</div>
+</div>
+
+<!-- ====== STUDY ====== -->
+<div id="screen-study" class="screen">
+<div class="card">
+  <div class="top-bar">
+    <span class="progress-text" id="study-prog">1 / 10</span>
+    <button class="btn btn-secondary" onclick="showScreen('welcome')" style="padding:7px 16px;font-size:0.88em">← Home</button>
+  </div>
+  <div id="study-content"></div>
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-secondary" id="study-prev" onclick="studyNav(-1)">◀ Prev</button>
+    <button class="btn btn-info"      onclick="startGame('practice')">🎮 Play Now!</button>
+    <button class="btn btn-secondary" id="study-next" onclick="studyNav(1)">Next ▶</button>
+  </div>
+</div>
+</div>
+
+<!-- ====== PRACTICE ====== -->
+<div id="screen-practice" class="screen">
+<div class="card">
+  <div class="top-bar">
+    <span class="progress-text" id="prac-prog">1 / 10</span>
+    <span class="stars-display"  id="prac-stars">⭐ 0</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="sound-toggle" onclick="toggleSound()" title="Sound ON (click to mute)"
+        style="background:none;border:none;font-size:1.4em;cursor:pointer;padding:2px 6px;border-radius:8px;transition:background 0.2s"
+        onmouseover="this.style.background='#eee'" onmouseout="this.style.background='none'">🔊</button>
+      <button class="btn btn-secondary" onclick="showScreen('welcome')" style="padding:7px 16px;font-size:0.88em">← Exit</button>
+    </div>
+  </div>
+
+  <div class="week-label" id="prac-week-label"></div>
+
+  <!-- Hint card: example sentence or definition -->
+  <div id="hint-card" class="hint-card example">
+    <div class="hint-label" id="hint-label">Example Sentence</div>
+    <div id="hint-text"></div>
+    <div class="hint-toggle">
+      <button class="htab on" id="htab-ex"  onclick="switchHint('ex')">📝 Example</button>
+      <button class="htab"    id="htab-def" onclick="switchHint('def')">📖 Definition</button>
+    </div>
+  </div>
+
+  <!-- Reveal word button (costs a hint) -->
+  <div class="reveal-area">
+    <button class="btn btn-reveal" id="reveal-btn" onclick="revealWord()" style="font-size:0.9em;padding:8px 18px">
+      👁 Show Word (uses 1 hint)
+    </button>
+    <div id="revealed-area" style="margin-top:8px"></div>
+  </div>
+
+  <div class="answer-zone" id="answer-zone">
+    <span id="answer-placeholder" style="color:#ccc;font-size:0.95em">click syllables below to build the word →</span>
+  </div>
+
+  <div class="scramble-zone" id="scramble-zone"></div>
+
+  <div class="feedback" id="prac-feedback"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-warning"   id="hint-btn"  onclick="useHint()">💡 Hint (3)</button>
+    <button class="btn btn-secondary"                onclick="clearAnswer()">🔄 Clear</button>
+    <button class="btn btn-primary"   id="check-btn" onclick="checkAnswer()">✔ Check!</button>
+    <button class="btn btn-success"   id="next-btn"  onclick="nextWord()" style="display:none">Next ▶</button>
+  </div>
+</div>
+</div>
+
+<!-- ====== RESULTS ====== -->
+<div id="screen-results" class="screen">
+<div class="card">
+  <h2 id="results-title">🎉 Well Done! 🎉</h2>
+  <div style="text-align:center;font-size:2em;margin:10px 0" id="results-emoji"></div>
+  <div style="text-align:center;font-size:1.05em;color:#555;margin:6px 0" id="results-summary"></div>
+  <div class="score-bar-wrap"><div class="score-bar" id="results-bar" style="width:0%"></div></div>
+  <div class="results-grid" id="results-grid"></div>
+  <div class="btn-row" style="margin-top:22px">
+    <button class="btn btn-primary" onclick="startGame('practice')">🔄 Play Again</button>
+    <button class="btn btn-success" onclick="showScreen('welcome')">🏠 Home</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ======================================================
+// WORD DATA
+// t: r=root/syllable  p=prefix  s=suffix  c=compound part
+// ex: example sentence with ___ as blank
+// def: simple English definition
+// ======================================================
+const TYPE_META = {
+  r: { bg:"#e3f2fd", color:"#1565c0", border:"#90caf9", label:"syllable"  },
+  p: { bg:"#fff3e0", color:"#bf360c", border:"#ffcc80", label:"prefix"    },
+  s: { bg:"#e8f5e9", color:"#1b5e20", border:"#a5d6a7", label:"suffix"    },
+  c: { bg:"#f3e5f5", color:"#4a148c", border:"#ce93d8", label:"word part" },
+};
+
+const WORD_DATA = {
+  FET: {
+    W10: { title:"Kids Can Be Big Helpers (1)", words:[
+      { w:"volunteer",   syl:["vol","un","teer"],        t:["r","r","r"], zh:"志工",
+        ex:"My mom is a ___ at our school library.", def:"A person who helps others without being paid." },
+      { w:"difference",  syl:["dif","fer","ence"],       t:["r","r","s"], zh:"差異",
+        ex:"Can you spot the ___ between the two pictures?", def:"The way things are not the same." },
+      { w:"litter",      syl:["lit","ter"],              t:["r","r"], zh:"亂丟垃圾",
+        ex:"Don't ___ — put your trash in the bin!", def:"Trash left on the ground in a public place." },
+      { w:"citizen",     syl:["cit","i","zen"],          t:["r","r","r"], zh:"公民",
+        ex:"Every ___ should follow the rules.", def:"A member of a city or country." },
+      { w:"issue",       syl:["is","sue"],               t:["r","r"], zh:"議題",
+        ex:"Pollution is a big ___ in our world.", def:"An important problem or topic." },
+      { w:"variety",     syl:["va","ri","e","ty"],       t:["r","r","r","s"], zh:"多樣性",
+        ex:"The store has a ___ of fresh fruits.", def:"Many different kinds of things." },
+      { w:"responsible", syl:["re","spon","si","ble"],   t:["p","r","r","s"], zh:"負責任的",
+        ex:"A ___ student always does their homework.", def:"Able to be trusted to do the right thing." },
+      { w:"trustworthy", syl:["trust","wor","thy"],      t:["r","r","s"], zh:"值得信任的",
+        ex:"She is ___ — I can always count on her.", def:"Honest and reliable; someone you can trust." },
+      { w:"skill",       syl:["sk","ill"],               t:["r","r"], zh:"技能",
+        ex:"Drawing is her special ___.", def:"Something you can do well after practice." },
+      { w:"local",       syl:["lo","cal"],               t:["r","r"], zh:"當地的",
+        ex:"We shop at the ___ market every weekend.", def:"Nearby; belonging to the area around you." },
+    ]},
+    W11: { title:"Kids Can Be Big Helpers (2)", words:[
+      { w:"homemade",    syl:["home","made"],            t:["c","c"], zh:"手工自製的",
+        ex:"Grandma's ___ cookies are the best!", def:"Made at home, not bought in a store." },
+      { w:"organizing",  syl:["or","gan","iz","ing"],    t:["r","r","r","s"], zh:"整理、組織",
+        ex:"She is ___ her books by color.", def:"Arranging things in a neat and useful order." },
+      { w:"successful",  syl:["suc","cess","ful"],       t:["r","r","s"], zh:"成功的",
+        ex:"The bake sale was very ___!", def:"Having done something very well." },
+      { w:"participate", syl:["par","tic","i","pate"],   t:["r","r","r","r"], zh:"參與",
+        ex:"Everyone can ___ in the fun game.", def:"To join in and take part in an activity." },
+      { w:"drive",       syl:["dr","ive"],               t:["r","r"], zh:"動力、驅使",
+        ex:"Hard work will ___ you to success.", def:"A strong wish to do something; also to steer a car." },
+      { w:"shelter",     syl:["shel","ter"],             t:["r","r"], zh:"遮蔽處",
+        ex:"The dog found ___ under the porch.", def:"A safe place that protects you from bad weather." },
+      { w:"prepare",     syl:["pre","pare"],             t:["p","r"], zh:"準備",
+        ex:"We need to ___ for the big spelling test.", def:"To get ready for something." },
+      { w:"serve",       syl:["s","erve"],               t:["r","r"], zh:"服務",
+        ex:"She will ___ soup to the hungry people.", def:"To give food or help to others." },
+      { w:"example",     syl:["ex","am","ple"],          t:["p","r","r"], zh:"榜樣、例子",
+        ex:"Be a good ___ for your little sister.", def:"Something that shows what other things are like." },
+      { w:"courteous",   syl:["cour","te","ous"],        t:["r","r","s"], zh:"有禮貌的",
+        ex:"It is ___ to say thank you and please.", def:"Polite and respectful to other people." },
+    ]},
+    W12: { title:"Water & Earth (1)", words:[
+      { w:"flow",        syl:["fl","ow"],                t:["r","r"], zh:"流動",
+        ex:"The river will ___ all the way to the sea.", def:"To move smoothly and steadily like water." },
+      { w:"carve",       syl:["c","arve"],               t:["r","r"], zh:"雕刻、切割",
+        ex:"The river can ___ a path through rock.", def:"To cut or shape something carefully." },
+      { w:"canyon",      syl:["can","yon"],              t:["r","r"], zh:"峽谷",
+        ex:"The deep ___ was formed by the river over millions of years.", def:"A deep valley with steep rocky sides." },
+      { w:"powerful",    syl:["pow","er","ful"],         t:["r","r","s"], zh:"強大的",
+        ex:"The ___ wind blew the tree right down.", def:"Having great strength or force." },
+      { w:"wave",        syl:["w","ave"],                t:["r","r"], zh:"海浪",
+        ex:"A big ___ knocked me over at the beach!", def:"A moving ridge of water on the surface of the sea." },
+      { w:"cliff",       syl:["cl","iff"],               t:["r","r"], zh:"懸崖",
+        ex:"We stood at the edge of the tall ___.", def:"A high, steep wall of rock, usually near the sea." },
+      { w:"glacier",     syl:["gla","cier"],             t:["r","r"], zh:"冰河",
+        ex:"The ___ moves just a few centimeters each year.", def:"A huge slow-moving river of ice." },
+      { w:"frozen",      syl:["fro","zen"],              t:["r","r"], zh:"結凍的",
+        ex:"The pond is ___ solid in winter.", def:"Turned to ice because of very cold temperatures." },
+      { w:"disaster",    syl:["dis","as","ter"],         t:["p","r","r"], zh:"災難",
+        ex:"The earthquake was a terrible ___.", def:"A sudden event that causes great damage or suffering." },
+      { w:"slowly",      syl:["slow","ly"],              t:["r","s"], zh:"慢慢地",
+        ex:"The turtle walked ___ across the road.", def:"At a slow speed; not quickly." },
+    ]},
+    W13: { title:"Water & Earth (2)", words:[
+      { w:"earthquake",  syl:["earth","quake"],          t:["c","c"], zh:"地震",
+        ex:"The ___ made all the buildings shake.", def:"A sudden shaking of the ground caused by movement underground." },
+      { w:"underneath",  syl:["under","neath"],           t:["p","r"], zh:"在下面",
+        ex:"The cat hid ___ the bed.", def:"Below or under something." },
+      { w:"amount",      syl:["a","mount"],              t:["r","r"], zh:"數量",
+        ex:"A huge ___ of rain fell last night.", def:"How much of something there is." },
+      { w:"damage",      syl:["dam","age"],              t:["r","r"], zh:"損害",
+        ex:"The storm caused ___ to many homes.", def:"Harm done to something." },
+      { w:"aftershock",  syl:["after","shock"],           t:["p","r"], zh:"餘震",
+        ex:"People were afraid of the ___ after the big earthquake.", def:"A smaller earthquake that happens after a larger one." },
+      { w:"tsunami",     syl:["tsu","na","mi"],          t:["r","r","r"], zh:"海嘯",
+        ex:"A ___ can travel across the ocean very fast.", def:"A giant ocean wave caused by an earthquake under the sea." },
+      { w:"quickly",     syl:["quick","ly"],             t:["r","s"], zh:"快速地",
+        ex:"She ___ finished her lunch and ran outside.", def:"At a fast speed; in a short time." },
+      { w:"ruin",        syl:["ru","in"],                t:["r","r"], zh:"破壞",
+        ex:"Heavy rain can ___ a picnic.", def:"To destroy or badly damage something." },
+      { w:"flood",       syl:["fl","ood"],               t:["r","r"], zh:"洪水",
+        ex:"The heavy rain caused a ___ in the town.", def:"Water that covers land that is normally dry." },
+      { w:"shape",       syl:["sh","ape"],               t:["r","r"], zh:"形狀",
+        ex:"Waves can ___ rocks over millions of years.", def:"The outer form of something; also to form or mold something." },
+    ]},
+    W15: { title:"Rain or Snow (1)", words:[
+      { w:"narrator",    syl:["nar","ra","tor"],         t:["r","r","s"], zh:"敘述者",
+        ex:"The ___ in the book had a warm, friendly voice.", def:"The person who tells a story." },
+      { w:"chickadee",   syl:["chick","a","dee"],        t:["r","r","r"], zh:"山雀",
+        ex:"A little ___ sat on the branch and sang.", def:"A small, friendly bird with a black cap and white cheeks." },
+      { w:"canopy",      syl:["can","o","py"],           t:["r","r","r"], zh:"樹冠層",
+        ex:"Monkeys swing through the forest ___.", def:"The top layer of a forest, like a leafy roof over everything below." },
+      { w:"den",         syl:["d","en"],                 t:["r","r"], zh:"動物巢穴",
+        ex:"The fox slept safely in its cozy ___.", def:"A cozy, hidden home for a wild animal." },
+      { w:"cozy",        syl:["co","zy"],                t:["r","r"], zh:"舒適溫暖的",
+        ex:"I felt ___ reading by the warm fire.", def:"Warm and comfortable; making you feel safe and relaxed." },
+      { w:"dangle",      syl:["dan","gle"],              t:["r","r"], zh:"懸垂晃動",
+        ex:"She let her feet ___ off the edge of the dock.", def:"To hang loosely and swing gently." },
+      { w:"slippery",    syl:["slip","per","y"],         t:["r","r","s"], zh:"滑的",
+        ex:"Be careful — the wet floor is ___!", def:"Smooth and hard to hold onto or walk on without sliding." },
+      { w:"rebuild",     syl:["re","build"],             t:["p","r"], zh:"重建",
+        ex:"The town worked hard to ___ after the storm.", def:"To build something again after it has been destroyed." },
+      { w:"swoop",       syl:["sw","oop"],               t:["r","r"], zh:"俯衝",
+        ex:"The eagle will ___ down and catch the fish.", def:"To fly down quickly and suddenly." },
+      { w:"fluffy",      syl:["fluf","fy"],              t:["r","s"], zh:"毛茸茸的",
+        ex:"The ___ kitten fell asleep in my lap.", def:"Soft and light, like clouds or cotton wool." },
+    ]},
+    W16: { title:"Rain or Snow (2)", words:[
+      { w:"surface",       syl:["sur","face"],             t:["r","r"], zh:"表面",
+        ex:"The ___ of the lake was perfectly still.", def:"The outside or top layer of something." },
+      { w:"squeeze",       syl:["squ","eeze"],             t:["r","r"], zh:"擠壓",
+        ex:"He had to ___ through the very narrow gap.", def:"To press something firmly from both sides." },
+      { w:"slumber party", syl:["slum","ber","par","ty"],  t:["r","r","r","s"], zh:"睡衣派對",
+        ex:"She invited five friends to her ___.", def:"A party where friends sleep over at your house." },
+      { w:"snooze",        syl:["sn","ooze"],              t:["r","r"], zh:"打盹",
+        ex:"The dog likes to ___ in the warm sunshine.", def:"To sleep lightly for a short time; to doze." },
+      { w:"underground",   syl:["under","ground"],          t:["p","r"], zh:"地下的",
+        ex:"Moles live ___ in long dark tunnels.", def:"Below the surface of the ground." },
+      { w:"chilly",        syl:["chil","ly"],              t:["r","s"], zh:"有點冷的",
+        ex:"It was a ___ morning, so I wore my jacket.", def:"A little cold; cool enough to make you shiver." },
+      { w:"nearby",        syl:["near","by"],              t:["c","c"], zh:"附近的",
+        ex:"There is a playground ___ our house.", def:"Close; not far away." },
+      { w:"muddy",         syl:["mud","dy"],               t:["r","s"], zh:"泥濘的",
+        ex:"His boots were ___ after the long hike.", def:"Covered with soft, wet mud." },
+      { w:"spotted",       syl:["spot","ted"],             t:["r","s"], zh:"發現",
+        ex:"She ___ a rainbow after the rain stopped.", def:"Saw something; or covered with spots." },
+      { w:"dodge",         syl:["d","odge"],               t:["r","r"], zh:"閃避",
+        ex:"He had to ___ the ball flying toward his head.", def:"To move quickly to avoid something." },
+    ]},
+    W18: { title:"Garden of Happiness (1)", words:[
+      { w:"lot",           syl:["l","ot"],                 t:["r","r"], zh:"地塊",
+        ex:"There is a small garden ___ next to our school.", def:"A piece of land; also means 'very much'." },
+      { w:"wrinkle",       syl:["wrin","kle"],             t:["r","r"], zh:"皺紋",
+        ex:"Grandpa gets a big ___ on his face when he smiles.", def:"A small fold or crease in a surface, like skin or paper." },
+      { w:"rusty",         syl:["rus","ty"],               t:["r","s"], zh:"生鏽的",
+        ex:"The old bike was ___ after years in the rain.", def:"Covered with rust; not used for a long time." },
+      { w:"inhale",        syl:["in","hale"],              t:["p","r"], zh:"吸氣",
+        ex:"___ slowly and smell the beautiful flowers.", def:"To breathe air into your lungs." },
+      { w:"plot",          syl:["pl","ot"],                t:["r","r"], zh:"地塊、情節",
+        ex:"Each family has their own garden ___ to grow vegetables.", def:"A small piece of land; also the story plan of a book." },
+      { w:"mural",         syl:["mu","ral"],               t:["r","r"], zh:"壁畫",
+        ex:"The students painted a colorful ___ on the hallway wall.", def:"A large painting made on a wall." },
+      { w:"measure",       syl:["meas","ure"],             t:["r","s"], zh:"測量",
+        ex:"We need to ___ how tall the plant has grown.", def:"To find out the size, length, or amount of something." },
+      { w:"seedling",      syl:["seed","ling"],            t:["r","s"], zh:"幼苗",
+        ex:"The tiny ___ needs water and sunlight to grow.", def:"A very young plant that has just grown from a seed." },
+      { w:"pebble",        syl:["peb","ble"],              t:["r","r"], zh:"鵝卵石",
+        ex:"She threw a smooth ___ into the pond.", def:"A small, smooth, rounded stone." },
+      { w:"stalk",         syl:["st","alk"],               t:["r","r"], zh:"植物的莖",
+        ex:"The sunflower ___ grew taller than me!", def:"The main stem of a plant." },
+    ]},
+    W19: { title:"Garden of Happiness (2)", words:[
+      { w:"chuckle",       syl:["chuck","le"],             t:["r","r"], zh:"輕笑",
+        ex:"The funny joke made me ___ quietly.", def:"To laugh softly to yourself." },
+      { w:"halfway",       syl:["half","way"],             t:["c","c"], zh:"中途",
+        ex:"We are ___ through the long hike!", def:"At the middle point of a distance or time." },
+      { w:"bud",           syl:["b","ud"],                 t:["r","r"], zh:"花苞",
+        ex:"I saw a tiny rose ___ ready to open.", def:"A small bump on a plant that will grow into a flower or leaf." },
+      { w:"petal",         syl:["pet","al"],               t:["r","r"], zh:"花瓣",
+        ex:"She gently pulled a pink ___ off the daisy.", def:"One of the soft, colored leaf-like parts of a flower." },
+      { w:"exclaim",       syl:["ex","claim"],             t:["p","r"], zh:"大聲喊出",
+        ex:"\"I won first place!\" she ___ed with joy.", def:"To say something loudly with strong feeling or excitement." },
+      { w:"proudly",       syl:["proud","ly"],             t:["r","s"], zh:"驕傲地",
+        ex:"He smiled ___ when he received his award.", def:"In a proud and happy way; feeling great about what you did." },
+      { w:"fade",          syl:["f","ade"],                t:["r","r"], zh:"褪色",
+        ex:"The old photo will ___ if left in the sunlight.", def:"To slowly lose color or brightness over time." },
+      { w:"droop",         syl:["dr","oop"],               t:["r","r"], zh:"下垂",
+        ex:"The flowers ___ when they need water.", def:"To hang or sink downward because of weakness or weight." },
+      { w:"tumble",        syl:["tum","ble"],              t:["r","r"], zh:"滾落",
+        ex:"The apples ___ off the tree in the wind.", def:"To fall or roll about in an uncontrolled way." },
+      { w:"haze",          syl:["h","aze"],                t:["r","r"], zh:"薄霧",
+        ex:"A warm golden ___ hung over the sleepy valley.", def:"Thin mist or smoke that makes the air slightly blurry." },
+    ]},
+  },
+  CET: {
+    W10: { title:"Technology: Then & Now (1)", words:[
+      { w:"imagine",      syl:["i","mag","ine"],          t:["r","r","r"], zh:"想像",
+        ex:"Close your eyes and ___ you are on a sunny beach.", def:"To picture something in your mind." },
+      { w:"invent",       syl:["in","vent"],              t:["p","r"], zh:"發明",
+        ex:"Who was the first person to ___ the telephone?", def:"To create something new that no one has made before." },
+      { w:"version",      syl:["ver","sion"],             t:["r","s"], zh:"版本",
+        ex:"This is the newest ___ of the app.", def:"One form of something that has been updated or changed." },
+      { w:"connect",      syl:["con","nect"],             t:["p","r"], zh:"連接",
+        ex:"Can you ___ the dots to make a picture?", def:"To join two or more things together." },
+      { w:"among",        syl:["a","mong"],               t:["r","r"], zh:"在…之中",
+        ex:"She hid ___ the tall trees.", def:"In the middle of; surrounded by." },
+      { w:"university",   syl:["u","ni","ver","si","ty"], t:["r","r","r","r","s"], zh:"大學",
+        ex:"He wants to study science at a famous ___.", def:"A school for older students to learn advanced subjects." },
+      { w:"buggy",        syl:["bug","gy"],               t:["r","s"], zh:"嬰兒車",
+        ex:"The baby slept peacefully in the ___.", def:"A small vehicle; a carriage pushed by hand." },
+      { w:"affordable",   syl:["af","ford","a","ble"],    t:["r","r","r","s"], zh:"負擔得起的",
+        ex:"The store sells ___ school supplies for every student.", def:"Not too expensive; cheap enough that most people can buy it." },
+      { w:"freedom",      syl:["free","dom"],             t:["r","s"], zh:"自由",
+        ex:"Birds have the ___ to fly anywhere they want.", def:"The right to do, say, or be what you want." },
+      { w:"environment",  syl:["en","vi","ron","ment"],   t:["p","r","r","s"], zh:"環境",
+        ex:"We must all work together to protect our ___.", def:"The natural world around us, including air, water, land, and living things." },
+    ]},
+    W11: { title:"Technology: Then & Now (2)", words:[
+      { w:"explore",      syl:["ex","plore"],             t:["p","r"], zh:"探索",
+        ex:"She loves to ___ the forest near her house.", def:"To travel to new places and look around carefully." },
+      { w:"landing",      syl:["land","ing"],             t:["r","s"], zh:"降落",
+        ex:"The plane made a smooth and safe ___.", def:"The act of coming down and touching the ground." },
+      { w:"as well",      syl:["as","well"],              t:["r","r"], zh:"也、同樣",
+        ex:"Can I come ___ ? I want to join too!", def:"Also; too; in addition." },
+      { w:"nickname",     syl:["nick","name"],            t:["c","c"], zh:"綽號",
+        ex:"His ___ is 'Speedy' because he runs so fast.", def:"A funny or short informal name for a person." },
+      { w:"spacecraft",   syl:["space","craft"],          t:["c","c"], zh:"太空船",
+        ex:"The ___ launched into the dark sky.", def:"A vehicle designed to travel in outer space." },
+      { w:"console",      syl:["con","sole"],             t:["p","r"], zh:"遊戲機",
+        ex:"He plays video games on his ___.", def:"A device with controls; a gaming machine you use with a TV." },
+      { w:"graphic",      syl:["graph","ic"],             t:["r","s"], zh:"圖形",
+        ex:"The ___ designer drew the cartoon for our book.", def:"A picture or image, especially one made by a computer." },
+      { w:"electronic",   syl:["e","lec","tron","ic"],    t:["r","r","r","s"], zh:"電子的",
+        ex:"A tablet is an ___ device.", def:"Using electricity and tiny parts called circuits to work." },
+      { w:"device",       syl:["de","vice"],              t:["p","r"], zh:"裝置",
+        ex:"A phone is a very useful ___.", def:"A tool or piece of equipment made to do a special job." },
+      { w:"tablet",       syl:["tab","let"],              t:["r","r"], zh:"平板電腦",
+        ex:"She reads colorful e-books on her ___.", def:"A flat computer that you control by touching the screen." },
+    ]},
+    W12: { title:"Technology: Then & Now (3)", words:[
+      { w:"communicate",  syl:["com","mu","ni","cate"],   t:["p","r","r","r"], zh:"溝通",
+        ex:"We use phones to ___ with friends far away.", def:"To share information, ideas, or feelings with others." },
+      { w:"function",     syl:["func","tion"],            t:["r","s"], zh:"功能",
+        ex:"What is the ___ of this button on the keyboard?", def:"The job or purpose of something." },
+      { w:"update",       syl:["up","date"],              t:["p","r"], zh:"更新",
+        ex:"Please ___ the app on your tablet.", def:"To make something newer or add the latest information." },
+      { w:"brick",        syl:["br","ick"],               t:["r","r"], zh:"磚塊",
+        ex:"The house was built with solid red ___s.", def:"A hard rectangular block used to build walls." },
+      { w:"own",          syl:["o","wn"],                 t:["r","r"], zh:"擁有",
+        ex:"Do you ___ a pet at home?", def:"To have something that belongs to you." },
+      { w:"improve",      syl:["im","prove"],             t:["p","r"], zh:"改善",
+        ex:"Practice every day to ___ your spelling skills.", def:"To become better or make something better." },
+      { w:"effect",       syl:["ef","fect"],              t:["p","r"], zh:"效果",
+        ex:"Sunshine has a very happy ___ on me.", def:"The result or change caused by something." },
+      { w:"item",         syl:["i","tem"],                t:["r","r"], zh:"物品",
+        ex:"Please choose just one ___ from the menu.", def:"One single thing in a list or group." },
+      { w:"unused",       syl:["un","used"],              t:["p","r"], zh:"未使用的",
+        ex:"There is an ___ notebook still in the drawer.", def:"Not used; still in its original condition." },
+      { w:"landfill",     syl:["land","fill"],            t:["c","c"], zh:"垃圾掩埋場",
+        ex:"We should recycle to keep trash out of the ___.", def:"A large area where garbage is buried in the ground." },
+    ]},
+    W13: { title:"The Crafty Fox (1)", words:[
+      { w:"become",       syl:["be","come"],              t:["p","r"], zh:"成為",
+        ex:"A caterpillar will ___ a beautiful butterfly.", def:"To start to be something; to change into something new." },
+      { w:"hunt",         syl:["h","unt"],                t:["r","r"], zh:"獵捕",
+        ex:"The fox will ___ for rabbits at night.", def:"To search for and chase animals for food." },
+      { w:"starve",       syl:["st","arve"],              t:["r","r"], zh:"挨餓",
+        ex:"Without enough rain, the plants will ___.", def:"To suffer badly or die from not having enough food." },
+      { w:"respect",      syl:["re","spect"],             t:["p","r"], zh:"尊重",
+        ex:"Always ___ your teachers and parents.", def:"To treat someone with care and politeness." },
+      { w:"suspicious",   syl:["sus","pi","cious"],       t:["r","r","s"], zh:"可疑的",
+        ex:"The dog looked ___ at the strange smell.", def:"Feeling that something is wrong or someone is not being honest." },
+      { w:"come up with", syl:["come","up","with"],       t:["r","r","r"], zh:"想出點子",
+        ex:"Can you ___ a good plan to help?", def:"To think of or invent an idea." },
+      { w:"roar",         syl:["r","oar"],                t:["r","r"], zh:"吼叫聲",
+        ex:"The lion let out a huge ___ in the jungle.", def:"A very loud, deep sound made by a big animal." },
+      { w:"peace",        syl:["p","eace"],               t:["r","r"], zh:"和平",
+        ex:"After the storm, everything was quiet and at ___.", def:"A calm time with no fighting or loud noise." },
+      { w:"silence",      syl:["si","lence"],             t:["r","s"], zh:"寂靜",
+        ex:"The library was filled with total ___.", def:"Complete quietness; no sound at all." },
+      { w:"except",       syl:["ex","cept"],              t:["p","r"], zh:"除了…之外",
+        ex:"Everyone came to the party ___ Tom.", def:"Not including; leaving out." },
+    ]},
+    W14: { title:"The Crafty Fox (2)", words:[
+      { w:"certainly",    syl:["cer","tain","ly"],        t:["r","r","s"], zh:"當然",
+        ex:"I will ___ be there on time, I promise!", def:"Without any doubt; definitely." },
+      { w:"grouchy",      syl:["grouch","y"],             t:["r","s"], zh:"脾氣壞的",
+        ex:"He is ___ in the morning before breakfast.", def:"Easily annoyed and in a bad mood." },
+      { w:"suggestion",   syl:["sug","ges","tion"],       t:["r","r","s"], zh:"建議",
+        ex:"Do you have a ___ for what game to play?", def:"An idea that you share for others to think about." },
+      { w:"urgent",       syl:["ur","gent"],              t:["r","r"], zh:"緊急的",
+        ex:"It is ___ that we call the doctor right away!", def:"Very important and needing attention immediately." },
+      { w:"meeting",      syl:["meet","ing"],             t:["r","s"], zh:"會議",
+        ex:"There is a class ___ after school today.", def:"A time when people come together to talk." },
+      { w:"complain",     syl:["com","plain"],            t:["p","r"], zh:"抱怨",
+        ex:"Don't ___ — just try your best!", def:"To say that you are unhappy or unsatisfied about something." },
+      { w:"search",       syl:["s","earch"],              t:["r","r"], zh:"搜尋",
+        ex:"Let's ___ for the missing puzzle piece.", def:"To look carefully for something." },
+      { w:"wicked",       syl:["wick","ed"],              t:["r","s"], zh:"邪惡的",
+        ex:"The ___ witch cast a spell on the princess.", def:"Very bad or evil." },
+      { w:"remove",       syl:["re","move"],              t:["p","r"], zh:"移除",
+        ex:"Please ___ your shoes before entering the house.", def:"To take something away from a place." },
+      { w:"look-alike",   syl:["look","a","like"],        t:["c","r","c"], zh:"長得很像的人",
+        ex:"The twins are perfect ___s — I can't tell them apart!", def:"A person or thing that looks very similar to another." },
+    ]},
+    W15: { title:"The Crafty Fox (3)", words:[
+      { w:"exactly",      syl:["ex","act","ly"],          t:["p","r","s"], zh:"正好",
+        ex:"That is ___ what I was thinking!", def:"Precisely; completely correct with no difference." },
+      { w:"unable",       syl:["un","a","ble"],           t:["p","r","s"], zh:"無法做到的",
+        ex:"She was ___ to open the very heavy door.", def:"Not able to do something." },
+      { w:"gladly",       syl:["glad","ly"],              t:["r","s"], zh:"樂意地",
+        ex:"I will ___ help you clean up after the party.", def:"In a happy and willing way." },
+      { w:"well",         syl:["w","ell"],                t:["r","r"], zh:"井",
+        ex:"The villagers collected their water from the deep ___.", def:"A deep hole dug in the ground to reach water below." },
+      { w:"reflection",   syl:["re","flec","tion"],       t:["p","r","s"], zh:"倒影",
+        ex:"She saw her ___ in the still pond.", def:"An image of something seen in a mirror or water." },
+      { w:"describe",     syl:["de","scribe"],            t:["p","r"], zh:"描述",
+        ex:"Can you ___ what the mystery animal looks like?", def:"To say what something looks, sounds, or feels like." },
+      { w:"pleased",      syl:["pl","eased"],             t:["r","r"], zh:"高興的",
+        ex:"Mom was very ___ with my spelling test score.", def:"Happy and satisfied with something." },
+      { w:"paw",          syl:["p","aw"],                 t:["r","r"], zh:"動物的爪子",
+        ex:"The puppy put its soft ___ on my lap.", def:"The foot of an animal like a cat or dog." },
+      { w:"skip",         syl:["sk","ip"],                t:["r","r"], zh:"跳躍",
+        ex:"Let's ___ all the way to the playground!", def:"To hop forward with light jumps; also to miss out a step." },
+      { w:"merrily",      syl:["mer","ri","ly"],          t:["r","r","s"], zh:"快樂地",
+        ex:"The children sang ___ around the big Christmas tree.", def:"In a cheerful and happy way." },
+    ]},
+    W18: { title:"At the Weather Station", words:[
+      { w:"against",      syl:["a","gainst"],             t:["r","r"], zh:"靠著、反對",
+        ex:"She leaned ___ the wall to rest.", def:"Touching; in contact with; on the opposite side." },
+      { w:"instrument",   syl:["in","stru","ment"],       t:["p","r","s"], zh:"儀器、樂器",
+        ex:"The thermometer is an ___ that measures temperature.", def:"A tool used for measuring; also something used to make music." },
+      { w:"promise",      syl:["prom","ise"],             t:["r","s"], zh:"承諾",
+        ex:"I ___ I will be home before dinner.", def:"To say that you will definitely do something." },
+      { w:"enter",        syl:["en","ter"],               t:["r","r"], zh:"進入",
+        ex:"Please knock before you ___ the room.", def:"To go into a place." },
+      { w:"predict",      syl:["pre","dict"],             t:["p","r"], zh:"預測",
+        ex:"Can you ___ what the weather will be like tomorrow?", def:"To say what you think will happen in the future." },
+      { w:"eager",        syl:["ea","ger"],               t:["r","r"], zh:"渴望的",
+        ex:"The ___ puppy jumped up and down at the door.", def:"Very excited and wanting to do or get something." },
+      { w:"disappointed", syl:["dis","ap","point","ed"],  t:["p","r","r","s"], zh:"失望的",
+        ex:"I was ___ when the field trip was cancelled.", def:"Sad and let down because something did not go as hoped." },
+      { w:"monitor",      syl:["mon","i","tor"],          t:["r","r","r"], zh:"螢幕、監控",
+        ex:"The doctor will ___ your health carefully.", def:"A screen; also to watch something carefully over time." },
+      { w:"pat",          syl:["p","at"],                 t:["r","r"], zh:"輕拍",
+        ex:"She gave the dog a gentle ___ on the head.", def:"A gentle touch with your hand." },
+      { w:"expert",       syl:["ex","pert"],              t:["p","r"], zh:"專家",
+        ex:"She is an ___ at making delicious sushi.", def:"A person who knows a great deal about a subject." },
+    ]},
+  }
+};
+
+// ======================================================
+// STATE
+// ======================================================
+let currentList = 'FET';
+let selectedWeeks = [];
+let practiceWords = [];
+let currentWordIdx = 0;
+let tileBag = [];
+let placed = [];
+let stars = 0;
+let hintsLeft = 3;
+let wrongWords = [];
+let answered = false;
+let hintMode = 'ex';    // 'ex' or 'def'
+let wordRevealed = false;
+
+let studyWords = [];
+let studyIdx = 0;
+
+// ======================================================
+// INIT
+// ======================================================
+window.addEventListener('load', () => selectList('FET'));
+
+function selectList(list) {
+  currentList = list;
+  selectedWeeks = [];
+  document.getElementById('tab-FET').classList.toggle('active', list === 'FET');
+  document.getElementById('tab-CET').classList.toggle('active', list === 'CET');
+  renderWeekGrid();
+}
+
+function renderWeekGrid() {
+  const data = WORD_DATA[currentList];
+  const keys = Object.keys(data);
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = '';
+
+  const allSel = selectedWeeks.length === keys.length;
+  const allBtn = mkEl('div', 'week-btn all-btn' + (allSel ? ' selected' : ''));
+  const total = keys.reduce((s,k) => s + data[k].words.length, 0);
+  allBtn.innerHTML = `🌟 All Weeks<br><small style="font-weight:normal">${total} words</small>`;
+  allBtn.onclick = () => { selectedWeeks = allSel ? [] : [...keys]; renderWeekGrid(); };
+  grid.appendChild(allBtn);
+
+  keys.forEach(k => {
+    const sel = selectedWeeks.includes(k);
+    const btn = mkEl('div', 'week-btn' + (sel ? ' selected' : ''));
+    btn.innerHTML = `<strong>${k}</strong><br><small style="font-weight:normal;font-size:0.82em">${data[k].title}</small><br><small>${data[k].words.length} words</small>`;
+    btn.onclick = () => {
+      selectedWeeks = sel ? selectedWeeks.filter(w => w !== k) : [...selectedWeeks, k];
+      renderWeekGrid();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function getActiveWords() {
+  const data = WORD_DATA[currentList];
+  const keys = selectedWeeks.length > 0 ? selectedWeeks : Object.keys(data);
+  const result = [];
+  keys.forEach(k => { if (data[k]) data[k].words.forEach(w => result.push({...w, weekKey:k, weekTitle:data[k].title})); });
+  return result;
+}
+
+// ======================================================
+// SCREENS
+// ======================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+// ======================================================
+// STUDY MODE
+// ======================================================
+function startGame(mode) {
+  const words = getActiveWords();
+  if (!words.length) { alert('Please select at least one week!'); return; }
+
+  if (mode === 'study') {
+    studyWords = words;
+    studyIdx = 0;
+    renderStudyWord();
+    showScreen('study');
+  } else {
+    practiceWords = shuffle([...words]);
+    currentWordIdx = 0;
+    stars = 0;
+    hintsLeft = 3;
+    wrongWords = [];
+    renderPracticeWord();
+    showScreen('practice');
+  }
+}
+
+function renderStudyWord() {
+  const w = studyWords[studyIdx];
+  document.getElementById('study-prog').textContent = `${studyIdx+1} / ${studyWords.length}`;
+  document.getElementById('study-prev').disabled = studyIdx === 0;
+  document.getElementById('study-next').disabled = studyIdx === studyWords.length - 1;
+
+  const sylHTML = w.syl.map((s,i) => {
+    const m = TYPE_META[w.t[i]] || TYPE_META.r;
+    return `<span style="background:${m.bg};color:${m.color};border:2px solid ${m.border};
+      padding:8px 15px;border-radius:10px;margin:4px;display:inline-block;
+      font-size:1.3em;font-weight:bold">${s}</span>`;
+  }).join('');
+
+  const types = [...new Set(w.t)];
+  let legendHTML = '';
+  if (types.length > 1 || types[0] !== 'r') {
+    legendHTML = '<div class="legend" style="margin-top:12px">' +
+      types.map(tp => {
+        const m = TYPE_META[tp] || TYPE_META.r;
+        return `<div class="legend-item"><div class="legend-dot" style="background:${m.bg};border-color:${m.border}"></div><span style="color:${m.color};font-weight:bold">${m.label}</span></div>`;
+      }).join('') + '</div>';
+  }
+
+  // Highlight blank in example
+  const exHTML = w.ex.replace('___', '<span style="display:inline-block;min-width:80px;border-bottom:3px solid #1565c0;color:#1565c0;font-weight:bold;text-align:center">' + w.w + '</span>');
+
+  document.getElementById('study-content').innerHTML = `
+    <div class="study-card">
+      <div style="font-size:0.82em;color:#999;margin-bottom:5px">${w.weekKey} · ${w.weekTitle}</div>
+      <div class="study-word">${w.w}</div>
+      <div class="study-dot">${w.syl.join(' · ')}</div>
+      <div>${sylHTML}</div>
+      ${legendHTML}
+    </div>
+    <div class="hint-card definition" style="margin-top:12px">
+      <div class="hint-label">📖 Definition</div>
+      <div>${w.def}</div>
+    </div>
+    <div class="hint-card example">
+      <div class="hint-label">📝 Example Sentence</div>
+      <div>${exHTML}</div>
+    </div>
+    <div class="info-box green" style="margin-top:8px">
+      ${buildWordTip(w)}
+    </div>`;
+}
+
+// Meanings for common prefixes and suffixes
+const PREFIX_MEANINGS = {
+  "re":   "again → re + build = build <em>again</em>",
+  "un":   "not / opposite → un + used = <em>not</em> used",
+  "dis":  "not / away → dis + appear = <em>not</em> appear",
+  "pre":  "before → pre + pare = get ready <em>before</em>",
+  "in":   "not / into → in + hale = breathe <em>into</em>",
+  "im":   "not / into → im + prove = move <em>into</em> better",
+  "ex":   "out / from → ex + claim = cry <em>out</em>",
+  "com":  "together / with → com + municate = share <em>with</em> others",
+  "con":  "together / with → con + nect = join <em>together</em>",
+  "after":"following / behind → after + shock = a shock that comes <em>after</em>",
+  "be":   "make / around → be + come = <em>make</em> into",
+  "de":   "down / away → de + scribe = write <em>down</em>",
+  "sur":  "over / above → sur + face = <em>above</em> the surface",
+  "up":   "higher / more → up + date = bring <em>up</em> to now",
+  "en":   "make / put into → en + ter = go <em>into</em>",
+  "ef":   "out → ef + fect = something that comes <em>out</em> of an action",
+  "sus":  "under / up → sus + picious = feeling something <em>underneath</em>",
+  "a":    "to / at → a + gainst = placed <em>at</em> something",
+  "under":"below / beneath → under + ground = <em>below</em> the ground",
+};
+
+const SUFFIX_MEANINGS = {
+  "ing":   "-ing → action happening right now (e.g. organiz<em>ing</em>)",
+  "ful":   "-ful → full of (e.g. power<em>ful</em> = full of power)",
+  "ly":    "-ly → in a ___ way (e.g. slow<em>ly</em> = in a slow way)",
+  "tion":  "-tion → the act or result of (e.g. func<em>tion</em>, sugges<em>tion</em>)",
+  "sion":  "-sion → the act or result of (e.g. ver<em>sion</em>)",
+  "er":    "-er → a person or thing that does something",
+  "or":    "-or → a person or thing that does something (e.g. narrat<em>or</em>)",
+  "tor":   "-tor → a person or thing that does something",
+  "ness":  "-ness → the state of being",
+  "able":  "-able → able to be (e.g. afford<em>able</em> = able to be afforded)",
+  "ble":   "-ble → able to be (e.g. responsi<em>ble</em> = able to respond)",
+  "ment":  "-ment → the result or process of (e.g. environ<em>ment</em>)",
+  "ous":   "-ous → full of / having the quality of (e.g. court<em>eous</em>)",
+  "cious": "-cious → having the quality of (e.g. suspi<em>cious</em>)",
+  "y":     "-y → having the quality of (e.g. rust<em>y</em> = having rust)",
+  "ty":    "-ty → state or quality (e.g. varie<em>ty</em>)",
+  "gy":    "-gy → having the quality of (e.g. bug<em>gy</em>)",
+  "fy":    "-fy → having the quality of (e.g. fluf<em>fy</em>)",
+  "dy":    "-dy → having the quality of (e.g. mud<em>dy</em>)",
+  "ly":    "-ly → in a ___ way",
+  "dom":   "-dom → the state of / a realm (e.g. free<em>dom</em> = state of being free)",
+  "ic":    "-ic → relating to (e.g. graph<em>ic</em>)",
+  "ed":    "-ed → past tense / done (e.g. spot<em>ted</em>, disappoint<em>ed</em>)",
+  "ling":  "-ling → a small or young thing (e.g. seed<em>ling</em> = a young plant)",
+  "ence":  "-ence → state or quality of (e.g. differ<em>ence</em>)",
+  "ise":   "-ise → the act of (e.g. prom<em>ise</em>)",
+  "ure":   "-ure → result of an action (e.g. meas<em>ure</em>)",
+  "thy":   "-thy → having the quality of (e.g. trust<em>worthy</em> = worthy of trust)",
+  "tion":  "-tion → the act or result of",
+  "ted":   "-ted → past tense (e.g. spot<em>ted</em> = saw / covered with spots)",
+};
+
+function buildWordTip(w) {
+  const tips = [];
+  tips.push(`📖 <strong>${w.syl.length} syllable${w.syl.length>1?'s':''}</strong>: ${w.syl.join(' · ')}`);
+
+  if (w.t.includes('p')) {
+    const pfxParts = w.syl.filter((_,i) => w.t[i]==='p');
+    pfxParts.forEach(pfx => {
+      const meaning = PREFIX_MEANINGS[pfx.toLowerCase()];
+      const meaningHTML = meaning ? `<br>&nbsp;&nbsp;&nbsp;💬 <em>${meaning}</em>` : '';
+      tips.push(`🟠 <strong>Prefix</strong> <span style="background:#fff3e0;color:#bf360c;border:1px solid #ffcc80;padding:2px 8px;border-radius:6px;font-weight:bold">${pfx}-</span> means: ${meaning ? meaning.split('→')[0] : 'added to the front of the word'}${meaningHTML}`);
+    });
+  }
+
+  if (w.t.includes('s')) {
+    const sfxParts = w.syl.filter((_,i) => w.t[i]==='s');
+    sfxParts.forEach(sfx => {
+      const meaning = SUFFIX_MEANINGS[sfx.toLowerCase()];
+      const meaningHTML = meaning ? `<br>&nbsp;&nbsp;&nbsp;💬 <em>${meaning}</em>` : '';
+      tips.push(`🟢 <strong>Suffix</strong> <span style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;padding:2px 8px;border-radius:6px;font-weight:bold">-${sfx}</span> means: ${meaning ? meaning.split('→')[0] : 'added to the end of the word'}${meaningHTML}`);
+    });
+  }
+
+  if (w.t.includes('c')) {
+    const parts = w.syl.filter((_,i) => w.t[i]==='c');
+    tips.push(`🟣 <strong>Compound word</strong>: <span style="background:#f3e5f5;color:#4a148c;border:1px solid #ce93d8;padding:2px 8px;border-radius:6px;font-weight:bold">${parts.join('</span> + <span style="background:#f3e5f5;color:#4a148c;border:1px solid #ce93d8;padding:2px 8px;border-radius:6px;font-weight:bold">')}</span><br>&nbsp;&nbsp;&nbsp;💬 Two words joined together to make a new meaning!`);
+  }
+
+  return tips.join('<br>');
+}
+
+function studyNav(dir) {
+  studyIdx = Math.max(0, Math.min(studyWords.length-1, studyIdx+dir));
+  renderStudyWord();
+}
+
+// ======================================================
+// PRACTICE MODE
+// ======================================================
+function renderPracticeWord() {
+  const w = practiceWords[currentWordIdx];
+  answered = false;
+  wordRevealed = false;
+  hintMode = 'ex';
+
+  document.getElementById('prac-prog').textContent = `${currentWordIdx+1} / ${practiceWords.length}`;
+  document.getElementById('prac-stars').textContent = `⭐ ${stars}`;
+  document.getElementById('prac-week-label').textContent = `${w.weekKey} · ${w.weekTitle}`;
+  document.getElementById('prac-feedback').textContent = '';
+  document.getElementById('prac-feedback').className = 'feedback';
+  document.getElementById('answer-zone').className = 'answer-zone';
+  document.getElementById('check-btn').style.display = '';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('hint-btn').disabled = hintsLeft === 0;
+  document.getElementById('reveal-btn').style.display = '';
+  document.getElementById('revealed-area').innerHTML = '';
+
+  // Rebuild hint card structure (may have been replaced by outerHTML on prev word)
+  document.getElementById('hint-card').className = 'hint-card example';
+  document.getElementById('hint-card').innerHTML = `
+    <div class="hint-label" id="hint-label">📝 Example Sentence</div>
+    <div id="hint-text"></div>
+    <div class="hint-toggle">
+      <button class="htab on" id="htab-ex"  onclick="switchHint('ex')">📝 Example</button>
+      <button class="htab"    id="htab-def" onclick="switchHint('def')">📖 Definition</button>
+    </div>`;
+  renderHintCard();
+
+  tileBag = shuffle(w.syl.map((s,i) => ({text:s, type:w.t[i], placed:false, origIdx:i})));
+  placed = [];
+  renderAnswerZone();
+  renderScrambleZone();
+}
+
+function renderHintCard() {
+  const w = practiceWords[currentWordIdx];
+  const card = document.getElementById('hint-card');
+  const label = document.getElementById('hint-label');
+  const text = document.getElementById('hint-text');
+
+  if (hintMode === 'ex') {
+    card.className = 'hint-card example';
+    label.textContent = '📝 Example Sentence';
+    text.innerHTML = w.ex.replace('___', '<span class="blank"></span>');
+  } else {
+    card.className = 'hint-card definition';
+    label.textContent = '📖 Definition';
+    text.innerHTML = w.def;
+  }
+}
+
+function switchHint(mode) {
+  hintMode = mode;
+  document.getElementById('htab-ex').classList.toggle('on', mode === 'ex');
+  document.getElementById('htab-def').classList.toggle('on', mode === 'def');
+  renderHintCard();
+}
+
+function revealWord() {
+  if (wordRevealed || answered) return;
+  if (hintsLeft <= 0) {
+    document.getElementById('prac-feedback').textContent = '⚠️ No hints left!';
+    document.getElementById('prac-feedback').className = 'feedback err';
+    return;
+  }
+  hintsLeft--;
+  wordRevealed = true;
+  const w = practiceWords[currentWordIdx];
+  document.getElementById('hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('hint-btn').disabled = hintsLeft === 0;
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('revealed-area').innerHTML = `<div class="revealed-word">🔍 ${w.w}</div>`;
+  if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+}
+
+function renderScrambleZone() {
+  const zone = document.getElementById('scramble-zone');
+  zone.innerHTML = '';
+  tileBag.forEach((tile, idx) => {
+    const m = TYPE_META[tile.type] || TYPE_META.r;
+    const el = mkEl('div', 'tile t-' + tile.type + (tile.placed ? ' used' : ''));
+    el.textContent = tile.text;
+    el.style.background = m.bg;
+    el.style.color = m.color;
+    el.style.borderColor = m.border;
+    if (!tile.placed) el.onclick = () => placeTile(idx);
+    zone.appendChild(el);
+  });
+}
+
+function renderAnswerZone() {
+  const zone = document.getElementById('answer-zone');
+  if (placed.length === 0) {
+    zone.innerHTML = '<span style="color:#ccc;font-size:0.95em">click syllables below to build the word →</span>';
+    return;
+  }
+  zone.innerHTML = '';
+  placed.forEach((tile, idx) => {
+    const m = TYPE_META[tile.type] || TYPE_META.r;
+    const el = mkEl('div', 'tile placed t-' + tile.type);
+    el.textContent = tile.text;
+    el.style.background = m.bg;
+    el.style.color = m.color;
+    el.style.borderColor = m.border;
+    el.title = 'Click to remove';
+    el.onclick = () => removeTile(idx);
+    zone.appendChild(el);
+  });
+}
+
+function placeTile(bagIdx) {
+  const tile = tileBag[bagIdx];
+  if (tile.placed) return;
+  tile.placed = true;
+  placed.push({text:tile.text, type:tile.type, bagIdx});
+  sfxTileClick();
+  renderAnswerZone();
+  renderScrambleZone();
+}
+
+function removeTile(placedIdx) {
+  if (answered) return;
+  const tile = placed[placedIdx];
+  tileBag[tile.bagIdx].placed = false;
+  placed.splice(placedIdx, 1);
+  renderAnswerZone();
+  renderScrambleZone();
+}
+
+function clearAnswer() {
+  if (answered) return;
+  placed = [];
+  tileBag.forEach(t => t.placed = false);
+  renderAnswerZone();
+  renderScrambleZone();
+}
+
+function checkAnswer() {
+  if (answered) return;
+  const w = practiceWords[currentWordIdx];
+  const correct = w.syl.join('');
+  const attempt = placed.map(t => t.text).join('');
+  if (!attempt) { document.getElementById('prac-feedback').textContent = '⚠️ Place some syllables first!'; document.getElementById('prac-feedback').className = 'feedback err'; return; }
+
+  const zone = document.getElementById('answer-zone');
+  if (attempt === correct) {
+    answered = true;
+    sfxCorrect();
+    speakWord(w.w, w.zh, 600); // speak word + Chinese after the correct-answer jingle
+    zone.className = 'answer-zone correct pop';
+    document.getElementById('prac-feedback').textContent = '🎉 Correct! Awesome! ⭐';
+    document.getElementById('prac-feedback').className = 'feedback ok';
+    if (!wordRevealed) stars++;
+    document.getElementById('prac-stars').textContent = `⭐ ${stars}`;
+    document.getElementById('check-btn').style.display = 'none';
+    document.getElementById('next-btn').style.display = '';
+    document.getElementById('hint-btn').disabled = true;
+    document.getElementById('reveal-btn').style.display = 'none';
+    // Show revealed word + word parts
+    document.getElementById('revealed-area').innerHTML = `<div class="revealed-word">✅ ${w.w}</div>`;
+    // Update hint card to show word parts info (keep the element, just change content)
+    const hc = document.getElementById('hint-card');
+    hc.className = 'info-box green';
+    hc.innerHTML = buildWordTip(w);
+  } else {
+    sfxWrong();
+    speakWord(w.w, w.zh, 500); // speak word + Chinese after the wrong-answer buzz
+    zone.className = 'answer-zone wrong';
+    zone.classList.add('shake');
+    setTimeout(() => zone.classList.remove('shake'), 500);
+    document.getElementById('prac-feedback').textContent = '❌ Not quite! Try again 💪';
+    document.getElementById('prac-feedback').className = 'feedback err';
+    if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+  }
+}
+
+function useHint() {
+  if (hintsLeft <= 0 || answered) return;
+  const w = practiceWords[currentWordIdx];
+  const nextPos = placed.length;
+  if (nextPos >= w.syl.length) return;
+  const targetSyl = w.syl[nextPos];
+  const bagIdx = tileBag.findIndex(t => !t.placed && t.text === targetSyl);
+  if (bagIdx >= 0) {
+    hintsLeft--;
+    sfxHint();
+    placeTile(bagIdx);
+    document.getElementById('hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+    document.getElementById('hint-btn').disabled = hintsLeft === 0;
+    if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+  }
+}
+
+function nextWord() {
+  currentWordIdx++;
+  if (currentWordIdx >= practiceWords.length) showResults();
+  else renderPracticeWord();
+}
+
+// ======================================================
+// RESULTS
+// ======================================================
+function showResults() {
+  sfxCelebration();
+  const total = practiceWords.length;
+  const pct = Math.round(stars / total * 100);
+  let title, emoji;
+  if (pct >= 90) { title="🌟 Spelling Star! 🌟"; emoji="⭐⭐⭐"; }
+  else if (pct >= 70) { title="🎉 Great Work! 🎉"; emoji="⭐⭐"; }
+  else { title="💪 Keep Trying! 💪"; emoji="⭐"; }
+
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-emoji').textContent = emoji;
+  document.getElementById('results-summary').textContent = `You got ${stars} out of ${total} correct! (${pct}%)`;
+  const bar = document.getElementById('results-bar');
+  bar.style.width = '0%';
+  setTimeout(() => bar.style.width = pct + '%', 100);
+
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  practiceWords.forEach(w => {
+    const wrong = wrongWords.includes(w.w);
+    const el = mkEl('div', 'result-item ' + (wrong ? 'err-r' : 'ok-r'));
+    el.innerHTML = `${wrong?'❌':'✅'} <strong>${w.w}</strong><span style="color:#666;font-size:0.82em;margin-left:4px">${w.syl.join('·')}</span>`;
+    grid.appendChild(el);
+  });
+  showScreen('results');
+}
+
+// ======================================================
+// ======================================================
+// SOUND ENGINE (Web Audio API)
+// ======================================================
+let _audioCtx = null;
+let soundEnabled = true;
+
+function getCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Resume context if suspended (required by some browsers after user gesture)
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+// Core: play a single tone
+function playTone(freq, type, startTime, duration, vol = 0.28) {
+  const ctx = getCtx();
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(vol, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
+}
+
+// 🔵 Tile click — light "pop"
+function sfxTileClick() {
+  if (!soundEnabled) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  playTone(700, 'sine', t, 0.07, 0.18);
+}
+
+// 🟢 Correct answer — cheerful C–E–G arpeggio
+function sfxCorrect() {
+  if (!soundEnabled) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  playTone(523,  'triangle', t,        0.18, 0.30);  // C5
+  playTone(659,  'triangle', t + 0.13, 0.18, 0.30);  // E5
+  playTone(784,  'triangle', t + 0.26, 0.30, 0.35);  // G5
+  playTone(1047, 'triangle', t + 0.39, 0.30, 0.25);  // C6
+}
+
+// 🔴 Wrong answer — low thud × 2
+function sfxWrong() {
+  if (!soundEnabled) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  playTone(220, 'sawtooth', t,        0.12, 0.22);
+  playTone(180, 'sawtooth', t + 0.14, 0.18, 0.18);
+}
+
+// 🌟 Hint used — soft descending chime
+function sfxHint() {
+  if (!soundEnabled) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  playTone(880, 'sine', t,        0.12, 0.20);
+  playTone(660, 'sine', t + 0.10, 0.14, 0.15);
+}
+
+// 🎉 Celebration (end of game) — full fanfare
+function sfxCelebration() {
+  if (!soundEnabled) return;
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  // Rising arpeggio
+  [[523,'triangle',.30],[659,'triangle',.28],[784,'triangle',.28],[1047,'triangle',.32]]
+    .forEach(([f, tp, v], i) => playTone(f, tp, t + i * 0.11, 0.22, v));
+  // Final chord
+  [523, 659, 784, 1047].forEach(f => playTone(f, 'triangle', t + 0.55, 0.7, 0.18));
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('sound-toggle');
+  btn.textContent = soundEnabled ? '🔊' : '🔇';
+  btn.title = soundEnabled ? 'Sound ON (click to mute)' : 'Sound OFF (click to unmute)';
+}
+
+// ── Text-to-Speech ──────────────────────────────────────
+let _cachedVoices = [];
+if ('speechSynthesis' in window) {
+  const _tryCache = () => { const v = window.speechSynthesis.getVoices(); if (v.length) _cachedVoices = v; };
+  _tryCache();
+  window.speechSynthesis.onvoiceschanged = _tryCache;
+}
+function _getVoice(langPrefix, namePattern) {
+  const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
+  if (namePattern) {
+    const hit = voices.find(v => v.lang.startsWith(langPrefix) && namePattern.test(v.name));
+    if (hit) return hit;
+  }
+  return voices.find(v => v.lang.startsWith(langPrefix) && v.localService) ||
+         voices.find(v => v.lang.startsWith(langPrefix)) || null;
+}
+
+function speakWord(word, zh, delayMs = 0) {
+  if (!soundEnabled) return;
+  if (!('speechSynthesis' in window)) return;
+  setTimeout(() => {
+    window.speechSynthesis.cancel();
+
+    const uttEn = new SpeechSynthesisUtterance(word);
+    uttEn.lang  = 'en-US';
+    uttEn.rate  = 0.85;
+    uttEn.pitch = 1.1;
+    // Note: do NOT set uttEn.voice — let browser pick default en-US voice
+    window.speechSynthesis.speak(uttEn);
+
+    if (zh) {
+      // Queue Chinese immediately after — speechSynthesis plays them in order
+      const uttZh = new SpeechSynthesisUtterance(zh);
+      uttZh.lang  = 'zh-TW';
+      uttZh.rate  = 0.9;
+      uttZh.pitch = 1.1;
+      const zhVoice = _getVoice('zh', null);
+      if (zhVoice) uttZh.voice = zhVoice;
+      window.speechSynthesis.speak(uttZh);
+    }
+  }, delayMs);
+}
+
+// ======================================================
+// UTILS
+// ======================================================
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+function mkEl(tag, cls) { const el = document.createElement(tag); if (cls) el.className = cls; return el; }
+</script>
+</body>
+</html>
