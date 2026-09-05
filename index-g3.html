@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>✨ G3 Spelling Star Adventure</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI', cursive;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 20px 10px;
+}
+.screen { display: none; width: 100%; max-width: 820px; }
+.screen.active { display: block; }
+.card { background: white; border-radius: 24px; padding: 28px 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+h1 { font-size: 2.2em; text-align: center; color: #5c35a0; margin-bottom: 8px; line-height: 1.3; }
+h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; }
+.btn { display: inline-block; padding: 12px 22px; border: none; border-radius: 50px; font-size: 1em; font-family: inherit; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; font-weight: bold; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+.btn-primary   { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+.btn-success   { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #155724; }
+.btn-warning   { background: linear-gradient(135deg, #f7971e, #ffd200); color: #5c3d00; }
+.btn-secondary { background: #e8e8e8; color: #555; }
+.btn-info      { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #003c5c; }
+.btn-reveal    { background: linear-gradient(135deg, #a18cd1, #fbc2eb); color: #3d0066; }
+.list-tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; }
+.tab { padding: 9px 24px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 1em; border: 2px solid #ccc; background: white; color: #555; font-weight: bold; transition: all 0.2s; }
+.tab.active { background: #764ba2; color: white; border-color: #764ba2; }
+.week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 12px; }
+.week-btn { padding: 14px 10px; background: linear-gradient(135deg, #e0f7fa, #e8f5e9); border: 2px solid #ccc; border-radius: 14px; cursor: pointer; text-align: center; transition: all 0.15s; font-family: inherit; font-size: 0.88em; font-weight: bold; color: #444; line-height: 1.4; }
+.week-btn:hover { border-color: #764ba2; transform: scale(1.04); }
+.week-btn.selected { border-color: #764ba2; background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+.week-btn.all-btn { background: linear-gradient(135deg, #ffe0b2, #fff9c4); }
+.week-btn.all-btn.selected { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+.btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.tile { display: inline-block; padding: 10px 16px; margin: 5px; border-radius: 12px; font-size: 1.35em; font-weight: bold; cursor: pointer; transition: transform 0.12s, opacity 0.12s; user-select: none; border: 3px solid transparent; letter-spacing: 0.5px; }
+.tile:hover { transform: scale(1.1) translateY(-3px); }
+.tile.t-r { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+.tile.t-p { background: #fff3e0; color: #bf360c; border-color: #ffcc80; }
+.tile.t-s { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+.tile.t-c { background: #f3e5f5; color: #4a148c; border-color: #ce93d8; }
+.tile.used { opacity: 0.25; cursor: default; transform: none !important; }
+.tile.placed { opacity: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.tile.placed:hover { transform: scale(1.05) translateY(-2px); }
+.answer-zone { min-height: 78px; border: 3px dashed #bbb; border-radius: 16px; padding: 12px; margin: 14px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; background: #fafafa; transition: border-color 0.3s, background 0.3s; }
+.answer-zone.correct { border-color: #43a047; background: #f1fff4; border-style: solid; }
+.answer-zone.wrong   { border-color: #e53935; background: #fff5f5; border-style: solid; }
+.scramble-zone { display: flex; flex-wrap: wrap; justify-content: center; padding: 12px 8px; min-height: 65px; background: #f5f5f5; border-radius: 14px; margin: 8px 0; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 10px 14px; background: linear-gradient(135deg, #fff9c4, #fffde7); border-radius: 12px; flex-wrap: wrap; gap: 8px; }
+.progress-text { font-size: 1em; color: #555; font-weight: bold; }
+.stars-display { font-size: 1.2em; }
+.hint-card { border-radius: 16px; padding: 16px 20px; margin: 12px 0; font-size: 1.05em; line-height: 1.7; position: relative; }
+.hint-card.example { background: #e8f4fd; border-left: 5px solid #2196f3; color: #0d3c61; }
+.hint-card.definition { background: #fff8e1; border-left: 5px solid #ffc107; color: #4a3000; }
+.hint-card .blank { display: inline-block; min-width: 90px; height: 26px; border-bottom: 3px solid #1565c0; vertical-align: bottom; margin: 0 4px; background: rgba(21,101,192,0.06); border-radius: 4px 4px 0 0; }
+.hint-label { font-size: 0.75em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 6px; }
+.hint-toggle { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.htab { padding: 5px 14px; border-radius: 20px; border: 2px solid #bbb; background: white; color: #777; font-family: inherit; font-size: 0.85em; cursor: pointer; font-weight: bold; transition: all 0.15s; }
+.htab.on { background: #764ba2; color: white; border-color: #764ba2; }
+.reveal-area { text-align: center; margin: 6px 0; }
+.revealed-word { display: inline-block; font-size: 2em; font-weight: bold; color: #3c1c7a; background: #f0ebff; padding: 6px 24px; border-radius: 12px; letter-spacing: 2px; border: 2px dashed #9575cd; }
+.word-emoji { display: block; font-size: 4em; line-height: 1.2; animation: emojiBounce 0.6s ease; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+@keyframes emojiBounce { 0%{transform:scale(0) rotate(-10deg);opacity:0} 60%{transform:scale(1.3) rotate(5deg);opacity:1} 80%{transform:scale(0.9) rotate(-3deg)} 100%{transform:scale(1) rotate(0deg)} }
+.feedback { text-align: center; font-size: 1.35em; font-weight: bold; min-height: 40px; padding: 8px; border-radius: 12px; margin: 8px 0; }
+.feedback.ok  { color: #2e7d32; background: #c8e6c9; }
+.feedback.err { color: #c62828; background: #ffcdd2; }
+.info-box { border-radius: 12px; padding: 10px 16px; margin: 10px 0; font-size: 0.92em; color: #555; line-height: 1.6; }
+.info-box.green { background: #e8f5e9; border-left: 4px solid #66bb6a; }
+.legend { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 6px 0; font-size: 0.82em; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 13px; height: 13px; border-radius: 4px; border: 2px solid; }
+.study-card { background: linear-gradient(135deg, #f5f7fa, #dde3ef); border-radius: 20px; padding: 24px; text-align: center; margin: 12px 0; }
+.study-word { font-size: 2.4em; font-weight: bold; color: #2c3e50; margin-bottom: 8px; letter-spacing: 1px; }
+.study-dot  { font-size: 1.4em; color: #777; margin-bottom: 14px; letter-spacing: 3px; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-top: 16px; max-height: 320px; overflow-y: auto; }
+.result-item { padding: 9px 13px; border-radius: 10px; font-size: 0.9em; display: flex; align-items: center; gap: 7px; }
+.result-item.ok-r  { background: #c8e6c9; }
+.result-item.err-r { background: #ffcdd2; }
+.score-bar-wrap { background: #eee; border-radius: 20px; height: 18px; margin: 12px 0; overflow: hidden; }
+.score-bar { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #43e97b, #38f9d7); transition: width 1s ease; }
+@keyframes pop   { 0%{transform:scale(1)} 40%{transform:scale(1.15)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.pop   { animation: pop   0.4s ease; }
+.shake { animation: shake 0.4s ease; }
+.week-label { text-align: center; font-size: 0.85em; color: #999; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div id="screen-welcome" class="screen active">
+<div class="card">
+  <h1>🌟 G3 Spelling Star<br>Adventure 🌟</h1>
+  <p style="text-align:center;color:#888;margin-bottom:22px;font-size:1.05em">G3 Vocabulary Practice 🎉</p>
+  <div class="list-tabs">
+    <button class="tab active" id="tab-FET" onclick="selectList('FET')">📚 FET List</button>
+    <button class="tab"        id="tab-CET" onclick="selectList('CET')">📖 CET List</button>
+  </div>
+  <div style="text-align:center;color:#666;font-size:0.95em;margin-bottom:8px">Choose weeks to practice (or pick All):</div>
+  <div id="week-grid" class="week-grid"></div>
+  <div class="btn-row" style="margin-top:22px">
+    <button class="btn btn-success" onclick="startGame('study')">📖 Study First</button>
+    <button class="btn btn-primary" onclick="startGame('practice')">🎮 Play Game!</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-study" class="screen">
+<div class="card">
+  <div class="top-bar">
+    <span class="progress-text" id="study-prog">1 / 10</span>
+    <button class="btn btn-secondary" onclick="showScreen('welcome')" style="padding:7px 16px;font-size:0.88em">← Home</button>
+  </div>
+  <div id="study-content"></div>
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-secondary" id="study-prev" onclick="studyNav(-1)">◀ Prev</button>
+    <button class="btn btn-info"      onclick="startGame('practice')">🎮 Play Now!</button>
+    <button class="btn btn-secondary" id="study-next" onclick="studyNav(1)">Next ▶</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-practice" class="screen">
+<div class="card">
+  <div class="top-bar">
+    <span class="progress-text" id="prac-prog">1 / 10</span>
+    <span class="stars-display"  id="prac-stars">⭐ 0</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="sound-toggle" onclick="toggleSound()" title="Sound ON (click to mute)"
+        style="background:none;border:none;font-size:1.4em;cursor:pointer;padding:2px 6px;border-radius:8px;transition:background 0.2s"
+        onmouseover="this.style.background='#eee'" onmouseout="this.style.background='none'">🔊</button>
+      <button class="btn btn-secondary" onclick="showScreen('welcome')" style="padding:7px 16px;font-size:0.88em">← Exit</button>
+    </div>
+  </div>
+  <div class="week-label" id="prac-week-label"></div>
+  <div id="hint-card" class="hint-card example">
+    <div class="hint-label" id="hint-label">Example Sentence</div>
+    <div id="hint-text"></div>
+    <div class="hint-toggle">
+      <button class="htab on" id="htab-ex"  onclick="switchHint('ex')">📝 Example</button>
+      <button class="htab"    id="htab-def" onclick="switchHint('def')">📖 Definition</button>
+    </div>
+  </div>
+  <div class="reveal-area">
+    <button class="btn btn-reveal" id="reveal-btn" onclick="revealWord()" style="font-size:0.9em;padding:8px 18px">
+      👁 Show Word (uses 1 hint)
+    </button>
+    <div id="revealed-area" style="margin-top:8px"></div>
+  </div>
+  <div class="answer-zone" id="answer-zone">
+    <span id="answer-placeholder" style="color:#ccc;font-size:0.95em">click syllables below to build the word →</span>
+  </div>
+  <div class="scramble-zone" id="scramble-zone"></div>
+  <div class="feedback" id="prac-feedback"></div>
+  <div class="btn-row">
+    <button class="btn btn-warning"   id="hint-btn"  onclick="useHint()">💡 Hint (3)</button>
+    <button class="btn btn-secondary"                onclick="clearAnswer()">🔄 Clear</button>
+    <button class="btn btn-primary"   id="check-btn" onclick="checkAnswer()">✔ Check!</button>
+    <button class="btn btn-success"   id="next-btn"  onclick="nextWord()" style="display:none">Next ▶</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-results" class="screen">
+<div class="card">
+  <h2 id="results-title">🎉 Well Done! 🎉</h2>
+  <div style="text-align:center;font-size:2em;margin:10px 0" id="results-emoji"></div>
+  <div style="text-align:center;font-size:1.05em;color:#555;margin:6px 0" id="results-summary"></div>
+  <div class="score-bar-wrap"><div class="score-bar" id="results-bar" style="width:0%"></div></div>
+  <div class="results-grid" id="results-grid"></div>
+  <div class="btn-row" style="margin-top:22px">
+    <button class="btn btn-primary" onclick="startGame('practice')">🔄 Play Again</button>
+    <button class="btn btn-success" onclick="showScreen('welcome')">🏠 Home</button>
+  </div>
+</div>
+</div>
+
+<script>
+const TYPE_META = {
+  r: { bg:"#e3f2fd", color:"#1565c0", border:"#90caf9", label:"syllable"  },
+  p: { bg:"#fff3e0", color:"#bf360c", border:"#ffcc80", label:"prefix"    },
+  s: { bg:"#e8f5e9", color:"#1b5e20", border:"#a5d6a7", label:"suffix"    },
+  c: { bg:"#f3e5f5", color:"#4a148c", border:"#ce93d8", label:"word part" },
+};
+
+const WORD_DATA = {
+  FET: {
+    "W1": { title:"Why Sun & Moon · Week 1", words:[
+      { w:"stream",    syl:["stream"],          t:["r"],         zh:"溪流",   emoji:"🏞️", ex:"We sat by the ___ and listened to the water.", def:"A small, narrow river." },
+      { w:"friendly",  syl:["friend","ly"],     t:["r","s"],     zh:"友善的", emoji:"😊", ex:"Our new neighbor is very ___ and always waves hello.", def:"Kind, helpful, and easy to get along with." },
+      { w:"thirsty",   syl:["thirs","ty"],      t:["r","s"],     zh:"口渴的", emoji:"💧", ex:"After running outside, I was very ___ for water.", def:"Feeling a need to drink something." },
+      { w:"visit",     syl:["vis","it"],        t:["r","r"],     zh:"拜訪",   emoji:"🏡", ex:"We are going to ___ grandma this weekend.", def:"To go to see someone or a place." },
+      { w:"dim",       syl:["dim"],             t:["r"],         zh:"昏暗的", emoji:"🕯️", ex:"The room was ___ with just one small candle.", def:"Not very bright; somewhat dark." },
+      { w:"wife",      syl:["wife"],            t:["r"],         zh:"妻子",   emoji:"👩", ex:"Mr. Chen brought his ___ to the school picnic.", def:"A married woman; the female partner in a marriage." },
+      { w:"husband",   syl:["hus","band"],      t:["r","r"],     zh:"丈夫",   emoji:"👨", ex:"Her ___ cooked dinner while she finished her work.", def:"A married man; the male partner in a marriage." },
+      { w:"broadly",   syl:["broad","ly"],      t:["r","s"],     zh:"廣泛地", emoji:"😃", ex:"She smiled ___ when she saw the surprise.", def:"Widely or in a big way." },
+      { w:"wonderful", syl:["won","der","ful"], t:["r","r","s"], zh:"美好的", emoji:"🌟", ex:"We had a ___ time at the beach.", def:"Very good, causing happiness or excitement." },
+      { w:"idea",      syl:["i","de","a"],      t:["r","r","r"], zh:"想法",   emoji:"💡", ex:"She had a great ___ for our science project.", def:"A thought or plan that comes to your mind." },
+    ]},
+    "W2": { title:"Why Sun & Moon · Week 2", words:[
+      { w:"grin",        syl:["grin"],               t:["r"],         zh:"咧嘴笑", emoji:"😁", ex:"She couldn't hide her ___ when she saw the puppies.", def:"A wide, happy smile showing your teeth." },
+      { w:"collect",     syl:["col","lect"],          t:["p","r"],     zh:"收集",   emoji:"🪲", ex:"I like to ___ colorful rocks from the beach.", def:"To gather things together from different places." },
+      { w:"rectangle",   syl:["rec","tan","gle"],     t:["r","r","r"], zh:"長方形", emoji:"▬",  ex:"A door is shaped like a ___.", def:"A shape with four straight sides and four right angles." },
+      { w:"foundation",  syl:["foun","da","tion"],    t:["r","r","s"], zh:"地基",   emoji:"🏗️", ex:"Workers poured concrete for the ___ of the new school.", def:"The solid base that supports a building." },
+      { w:"enormous",    syl:["e","nor","mous"],      t:["r","r","s"], zh:"巨大的", emoji:"🐘", ex:"An ___ whale swam right beside our boat.", def:"Very, very large; much bigger than usual." },
+      { w:"ceiling",     syl:["ceil","ing"],          t:["r","s"],     zh:"天花板", emoji:"🏠", ex:"There was a big spider hanging from the ___.", def:"The top inside surface of a room." },
+      { w:"clay",        syl:["clay"],                t:["r"],         zh:"黏土",   emoji:"🏺", ex:"We made bowls out of ___ in art class.", def:"A smooth, sticky earth used for making pots and sculptures." },
+      { w:"sturdy",      syl:["stur","dy"],           t:["r","r"],     zh:"堅固的", emoji:"💪", ex:"We built a ___ bridge out of sticks.", def:"Strong and well-built; not likely to break." },
+      { w:"valley",      syl:["val","ley"],           t:["r","r"],     zh:"山谷",   emoji:"🏔️", ex:"A river flowed through the green ___.", def:"A low area of land between hills or mountains." },
+      { w:"massive",     syl:["mas","sive"],          t:["r","s"],     zh:"龐大的", emoji:"🏔️", ex:"A ___ wave crashed onto the shore.", def:"Very large and heavy." },
+    ]},
+    "W3": { title:"Why Sun & Moon · Week 3", words:[
+      { w:"declare",     syl:["de","clare"],          t:["p","r"],     zh:"宣告",   emoji:"📢", ex:"The judge ___ d the winner of the contest.", def:"To say something officially or strongly." },
+      { w:"lovely",      syl:["love","ly"],           t:["r","s"],     zh:"美麗的", emoji:"🌸", ex:"What a ___ sunset — the sky is pink and orange!", def:"Beautiful and pleasant; very nice." },
+      { w:"exclaim",     syl:["ex","claim"],          t:["p","r"],     zh:"驚呼",   emoji:"😲", ex:"'Wow!' she ___ ed when she opened her gift.", def:"To say something loudly and with strong feeling." },
+      { w:"glittering",  syl:["glit","ter","ing"],    t:["r","r","s"], zh:"閃閃發光", emoji:"✨", ex:"The ___ stars lit up the whole sky.", def:"Shining brightly with flashes of light." },
+      { w:"scale",       syl:["scale"],               t:["r"],         zh:"鱗片",   emoji:"🐟", ex:"A fish's body is covered in smooth ___s.", def:"Small, flat pieces that cover a fish; or a device for weighing." },
+      { w:"skitter",     syl:["skit","ter"],          t:["r","r"],     zh:"輕快移動", emoji:"🦎", ex:"The lizard would ___ across the rocks in the sun.", def:"To move quickly and lightly, like a small animal." },
+      { w:"graceful",    syl:["grace","ful"],         t:["r","s"],     zh:"優雅的", emoji:"🩰", ex:"The ballet dancer was ___ on stage.", def:"Moving in a smooth, beautiful way." },
+      { w:"stomp",       syl:["stomp"],               t:["r"],         zh:"跺腳",   emoji:"🦶", ex:"The giant would ___ its feet and shake the ground.", def:"To step heavily and with force." },
+      { w:"comfortable", syl:["com","fort","a","ble"],t:["p","r","r","s"], zh:"舒適的", emoji:"🛋️", ex:"This pillow is so ___ — I could fall asleep right away.", def:"Making you feel relaxed and at ease." },
+      { w:"numerous",    syl:["nu","mer","ous"],      t:["r","r","s"], zh:"許多的", emoji:"🔢", ex:"There were ___ butterflies in the garden.", def:"Very many; a large number of." },
+    ]},
+    "W4": { title:"How Raven · Week 4", words:[
+      { w:"exist",       syl:["ex","ist"],            t:["p","r"],     zh:"存在",   emoji:"🌍", ex:"Did dinosaurs really ___?", def:"To be real or alive." },
+      { w:"clam",        syl:["clam"],                t:["r"],         zh:"蛤蜊",   emoji:"🦪", ex:"The ___ snapped shut when it felt my hand.", def:"A shellfish with two shells that lives in sand or water." },
+      { w:"amusing",     syl:["a","mus","ing"],       t:["r","r","s"], zh:"有趣的", emoji:"😄", ex:"The clown's tricks were very ___.", def:"Funny or entertaining; making you smile or laugh." },
+      { w:"responsible", syl:["re","spon","si","ble"],t:["p","r","r","s"], zh:"負責任的", emoji:"⭐", ex:"A ___ student always turns in homework on time.", def:"Being trusted to do the right thing and take care of duties." },
+      { w:"create",      syl:["cre","ate"],           t:["r","r"],     zh:"創造",   emoji:"🎨", ex:"We used crayons to ___ a colorful poster.", def:"To make or design something new." },
+      { w:"agree",       syl:["a","gree"],            t:["r","r"],     zh:"同意",   emoji:"👍", ex:"Both friends ___ d that chocolate was the best flavor.", def:"To have the same opinion as someone else." },
+      { w:"unable",      syl:["un","a","ble"],        t:["p","r","s"], zh:"不能夠的", emoji:"❌", ex:"She was ___ to open the jar because the lid was stuck.", def:"Not able to do something." },
+      { w:"guardian",    syl:["guard","i","an"],      t:["r","r","r"], zh:"守護者", emoji:"🛡️", ex:"The lion became the ___ of the forest.", def:"A person or animal that protects and takes care of another." },
+      { w:"longhouse",   syl:["long","house"],        t:["c","c"],     zh:"長屋",   emoji:"🏠", ex:"The whole village lived together in one big ___.", def:"A large, long building where several families lived together." },
+    ]},
+    "W5": { title:"How Raven · Week 5", words:[
+      { w:"belong",      syl:["be","long"],           t:["p","r"],     zh:"屬於",   emoji:"🏠", ex:"This book ___ s to the school library — please return it.", def:"To be owned by someone or to be a member of a group." },
+      { w:"preparation", syl:["prep","a","ra","tion"],t:["r","r","r","s"], zh:"準備", emoji:"📋", ex:"Good ___ is the key to a great performance.", def:"The process of getting ready for something." },
+      { w:"weary",       syl:["wea","ry"],            t:["r","r"],     zh:"疲倦的", emoji:"😴", ex:"After the long hike, we were too ___ to cook dinner.", def:"Very tired, especially from doing something for a long time." },
+      { w:"magnificent", syl:["mag","nif","i","cent"],t:["r","r","r","r"], zh:"壯觀的", emoji:"🏔️", ex:"We saw a ___ rainbow after the storm.", def:"Very beautiful, grand, and impressive." },
+      { w:"brood",       syl:["brood"],               t:["r"],         zh:"沉思、孵蛋", emoji:"🐣", ex:"The hen sat on her ___ of eggs to keep them warm.", def:"A group of young birds; to think deeply and sadly." },
+      { w:"convince",    syl:["con","vince"],         t:["p","r"],     zh:"說服",   emoji:"💬", ex:"She tried to ___ her dad to let her get a pet rabbit.", def:"To make someone believe or agree to something." },
+      { w:"politely",    syl:["po","lite","ly"],      t:["r","r","s"], zh:"有禮貌地", emoji:"🎩", ex:"He ___ held the door open for the elderly woman.", def:"In a respectful and considerate way." },
+      { w:"approach",    syl:["ap","proach"],         t:["p","r"],     zh:"接近",   emoji:"🚶", ex:"Don't ___ a strange dog without asking first.", def:"To move nearer to someone or something." },
+      { w:"rejoice",     syl:["re","joice"],          t:["p","r"],     zh:"歡喜",   emoji:"🎉", ex:"The whole team ___ d when they won the championship.", def:"To feel or show great happiness." },
+      { w:"satisfied",   syl:["sat","is","fied"],     t:["r","r","s"], zh:"滿足的", emoji:"😌", ex:"I felt ___ after finishing my big plate of noodles.", def:"Feeling that you are happy with something." },
+    ]},
+    "W6": { title:"How Raven · Week 6", words:[
+      { w:"creature",    syl:["crea","ture"],         t:["r","r"],     zh:"生物",   emoji:"🦋", ex:"Every ___ in the rainforest plays an important role.", def:"Any living animal or being." },
+      { w:"remain",      syl:["re","main"],           t:["p","r"],     zh:"留下",   emoji:"🏛️", ex:"Only a few old buildings ___ from the ancient city.", def:"To stay or continue to be in the same place or condition." },
+      { w:"trick",       syl:["trick"],               t:["r"],         zh:"把戲",   emoji:"🪄", ex:"The magician performed an amazing card ___.", def:"A clever action done to entertain or to fool someone." },
+      { w:"complain",    syl:["com","plain"],         t:["p","r"],     zh:"抱怨",   emoji:"😤", ex:"He ___ ed that the soup was too hot.", def:"To say that you are unhappy or dissatisfied about something." },
+      { w:"guard",       syl:["guard"],               t:["r"],         zh:"守衛",   emoji:"💂", ex:"Two soldiers stand ___ at the palace gate.", def:"To watch over and protect someone or something." },
+      { w:"boast",       syl:["boast"],               t:["r"],         zh:"吹噓",   emoji:"😤", ex:"She liked to ___ about her test scores.", def:"To talk about yourself in a proud way to impress others." },
+      { w:"plead",       syl:["plead"],               t:["r"],         zh:"懇求",   emoji:"🙏", ex:"The child ___ ed with his mom to buy him a toy.", def:"To beg or ask for something in a very serious way." },
+      { w:"annoyed",     syl:["an","noyed"],          t:["r","s"],     zh:"惱怒的", emoji:"😠", ex:"She was ___ when her little brother kept interrupting.", def:"Feeling slightly angry or irritated." },
+      { w:"scold",       syl:["scold"],               t:["r"],         zh:"責罵",   emoji:"😠", ex:"Mom ___ ed me for leaving my shoes in the hall.", def:"To speak angrily to someone because they did something wrong." },
+      { w:"mistaken",    syl:["mis","tak","en"],      t:["p","r","s"], zh:"弄錯的", emoji:"❌", ex:"I was ___ — the party is on Friday, not Thursday.", def:"Wrong or incorrect about something." },
+    ]},
+    "W7": { title:"Cocoliso · Week 7", words:[
+      { w:"dream",       syl:["dream"],               t:["r"],         zh:"夢想",   emoji:"💭", ex:"Her ___ is to become an astronaut one day.", def:"A strong wish; or images in your mind while sleeping." },
+      { w:"swamp",       syl:["swamp"],               t:["r"],         zh:"沼澤",   emoji:"🐊", ex:"An alligator slid into the ___.", def:"Wet, muddy land often covered with water." },
+      { w:"nickname",    syl:["nick","name"],         t:["c","c"],     zh:"暱稱",   emoji:"😊", ex:"My friends call me 'Sunny' — it's my ___.", def:"An informal name used instead of someone's real name." },
+      { w:"amazing",     syl:["a","maz","ing"],       t:["r","r","s"], zh:"令人驚嘆的", emoji:"😲", ex:"The ___ fireworks lit up the whole sky.", def:"Very surprising, wonderful, or impressive." },
+      { w:"bored",       syl:["bored"],               t:["r"],         zh:"無聊的", emoji:"😑", ex:"He was ___ because there was nothing to do.", def:"Feeling tired and uninterested because nothing is exciting." },
+      { w:"shortcut",    syl:["short","cut"],         t:["c","c"],     zh:"捷徑",   emoji:"🗺️", ex:"We took a ___ through the park to get home faster.", def:"A quicker or easier way to reach somewhere or do something." },
+      { w:"shadow",      syl:["shad","ow"],           t:["r","r"],     zh:"影子",   emoji:"👤", ex:"At noon, my ___ is very short.", def:"A dark shape made when something blocks the light." },
+      { w:"discovery",   syl:["dis","cov","er","y"],  t:["p","r","r","r"], zh:"發現", emoji:"🔭", ex:"The scientist made an exciting new ___.", def:"Finding or learning about something for the first time." },
+      { w:"proud",       syl:["proud"],               t:["r"],         zh:"自豪的", emoji:"🦁", ex:"I felt ___ when I finished reading my first chapter book.", def:"Feeling pleased about your own or someone else's achievement." },
+    ]},
+    "W8": { title:"Cocoliso · Week 8", words:[
+      { w:"clinic",      syl:["clin","ic"],           t:["r","r"],     zh:"診所",   emoji:"🏥", ex:"The doctor at the ___ gave me a checkup.", def:"A place where people go to see a doctor for medical care." },
+      { w:"harmless",    syl:["harm","less"],         t:["r","s"],     zh:"無害的", emoji:"🌱", ex:"That big spider looks scary, but it's completely ___.", def:"Not able to cause harm or danger." },
+      { w:"pure",        syl:["pure"],                t:["r"],         zh:"純淨的", emoji:"💎", ex:"Drink ___ water from the mountain spring.", def:"Not mixed with anything else; clean and natural." },
+      { w:"distance",    syl:["dis","tance"],         t:["p","r"],     zh:"距離",   emoji:"📏", ex:"The school is within walking ___ of my house.", def:"The amount of space between two places." },
+      { w:"unusual",     syl:["un","u","su","al"],    t:["p","r","r","s"], zh:"不尋常的", emoji:"🦄", ex:"It is ___ to see snow in Taiwan in summer.", def:"Different from what is normal or expected." },
+      { w:"fortunate",   syl:["for","tu","nate"],     t:["r","r","s"], zh:"幸運的", emoji:"🍀", ex:"We were ___ that it didn't rain on our picnic day.", def:"Lucky; having good things happen to you." },
+      { w:"rare",        syl:["rare"],                t:["r"],         zh:"罕見的", emoji:"💎", ex:"The snow leopard is a ___ and beautiful animal.", def:"Not found or seen very often; not common." },
+      { w:"grateful",    syl:["grate","ful"],         t:["r","s"],     zh:"感謝的", emoji:"🙏", ex:"I am ___ to my teacher for helping me understand math.", def:"Feeling or showing thanks for something kind done for you." },
+      { w:"glide",       syl:["glide"],               t:["r"],         zh:"滑翔",   emoji:"🦅", ex:"Eagles ___ on the warm air currents high in the sky.", def:"To move smoothly and quietly through the air or water." },
+      { w:"scientist",   syl:["sci","en","tist"],     t:["r","r","r"], zh:"科學家", emoji:"🔬", ex:"The ___ spent years studying whale migration.", def:"A person who studies or works in science." },
+    ]},
+    "W10": { title:"Wolf Island · Week 10", words:[
+      { w:"island",      syl:["i","land"],            t:["r","r"],     zh:"島嶼",   emoji:"🏝️", ex:"We took a boat to the tiny ___.", def:"A piece of land completely surrounded by water." },
+      { w:"several",     syl:["sev","er","al"],       t:["r","r","s"], zh:"幾個",   emoji:"🔢", ex:"I have visited that museum ___ times.", def:"More than two but not very many." },
+      { w:"depend",      syl:["de","pend"],           t:["p","r"],     zh:"依靠",   emoji:"🤝", ex:"Young animals ___ on their parents for food.", def:"To rely on or need someone or something." },
+      { w:"healthy",     syl:["health","y"],          t:["r","s"],     zh:"健康的", emoji:"🥦", ex:"Eating vegetables helps you stay ___.", def:"Being in good physical condition; not sick." },
+      { w:"male",        syl:["male"],                t:["r"],         zh:"雄性的", emoji:"♂️", ex:"The ___ lion has a big, fluffy mane.", def:"Of the sex that fertilizes; relating to males." },
+      { w:"female",      syl:["fe","male"],           t:["r","r"],     zh:"雌性的", emoji:"♀️", ex:"A ___ deer is called a doe.", def:"Of the sex that can give birth or lay eggs." },
+      { w:"strange",     syl:["strange"],             t:["r"],         zh:"奇怪的", emoji:"🤔", ex:"We heard a ___ noise coming from the attic.", def:"Unusual or unfamiliar; not what you would expect." },
+      { w:"edge",        syl:["edge"],                t:["r"],         zh:"邊緣",   emoji:"⚡", ex:"I sat at the ___ of the dock and dangled my feet in the water.", def:"The outer or farthest part of something." },
+      { w:"curious",     syl:["cu","ri","ous"],       t:["r","r","s"], zh:"好奇的", emoji:"🤔", ex:"The ___ cat sniffed every corner of the new room.", def:"Wanting to know or learn about something." },
+    ]},
+    "W11": { title:"Wolf Island · Week 11", words:[
+      { w:"raft",        syl:["raft"],                t:["r"],         zh:"筏",     emoji:"🚣", ex:"We built a small ___ to float down the river.", def:"A flat floating platform made of wood or other materials." },
+      { w:"drift",       syl:["drift"],               t:["r"],         zh:"漂流",   emoji:"🌊", ex:"The leaf began to ___ downstream.", def:"To be carried slowly by water or wind without direction." },
+      { w:"howl",        syl:["howl"],                t:["r"],         zh:"嚎叫",   emoji:"🐺", ex:"We heard wolves ___ in the distance at night.", def:"A long, loud, mournful cry made by a dog or wolf." },
+      { w:"adult",       syl:["a","dult"],            t:["r","r"],     zh:"成年的", emoji:"🦁", ex:"The ___ elephant protected the young ones.", def:"A fully grown person or animal." },
+      { w:"steadily",    syl:["stead","i","ly"],      t:["r","r","s"], zh:"穩定地", emoji:"📈", ex:"The temperature dropped ___ through the night.", def:"In a regular, continuous, and stable way." },
+      { w:"mainland",    syl:["main","land"],         t:["c","c"],     zh:"大陸",   emoji:"🗺️", ex:"Ferries run between the island and the ___.", def:"The main large area of land, not including islands." },
+      { w:"bury",        syl:["bur","y"],             t:["r","r"],     zh:"埋藏",   emoji:"⚰️", ex:"The dog likes to ___ bones in the garden.", def:"To put something in the ground and cover it." },
+      { w:"fawn",        syl:["fawn"],                t:["r"],         zh:"小鹿",   emoji:"🦌", ex:"The tiny ___ wobbled on its new legs.", def:"A young deer, usually less than one year old." },
+      { w:"amount",      syl:["a","mount"],           t:["r","r"],     zh:"數量",   emoji:"📊", ex:"A small ___ of exercise each day keeps you healthy.", def:"A quantity of something." },
+      { w:"hunt",        syl:["hunt"],                t:["r"],         zh:"獵取",   emoji:"🦊", ex:"Wolves ___ in packs to catch large animals.", def:"To search for and try to catch an animal for food." },
+    ]},
+    "W12": { title:"Wolf Island · Week 12", words:[
+      { w:"store",       syl:["store"],               t:["r"],         zh:"儲存",   emoji:"🏪", ex:"Squirrels ___ nuts to eat in the winter.", def:"To keep something for use in the future." },
+      { w:"population",  syl:["pop","u","la","tion"], t:["r","r","r","s"], zh:"族群數量", emoji:"👥", ex:"The ___ of wolves on the island grew every year.", def:"The number of people or animals living in a place." },
+      { w:"available",   syl:["a","vail","a","ble"],  t:["r","r","r","s"], zh:"可得到的", emoji:"✅", ex:"Fresh fruit is ___ at the market every morning.", def:"Ready to be used or gotten; free." },
+      { w:"balance",     syl:["bal","ance"],          t:["r","s"],     zh:"平衡",   emoji:"⚖️", ex:"Nature needs a ___ between predators and prey.", def:"A state where things are equal or steady." },
+      { w:"mild",        syl:["mild"],                t:["r"],         zh:"溫和的", emoji:"🌤️", ex:"Spring weather is ___ and pleasant.", def:"Not too strong, hot, or cold; gentle." },
+      { w:"warmth",      syl:["warmth"],              t:["r"],         zh:"溫暖",   emoji:"☀️", ex:"The puppies huddled together for ___.", def:"The quality of being pleasantly warm." },
+      { w:"lucky",       syl:["luck","y"],            t:["r","s"],     zh:"幸運的", emoji:"🍀", ex:"I felt ___ to find a penny on the sidewalk.", def:"Having or bringing good fortune." },
+      { w:"gnaw",        syl:["gnaw"],                t:["r"],         zh:"啃咬",   emoji:"🦫", ex:"The beaver loves to ___ on thick tree trunks.", def:"To bite or chew on something repeatedly." },
+      { w:"reach",       syl:["reach"],               t:["r"],         zh:"到達",   emoji:"🤝", ex:"The hikers hoped to ___ the summit by noon.", def:"To arrive at a place; to stretch out to get something." },
+      { w:"melt",        syl:["melt"],                t:["r"],         zh:"融化",   emoji:"🧊", ex:"The snow began to ___ in the warm spring sunshine.", def:"To turn from solid to liquid because of heat." },
+    ]},
+    "W13": { title:"Weird Friends · Week 13", words:[
+      { w:"predator",    syl:["pred","a","tor"],      t:["r","r","r"], zh:"掠食者", emoji:"🦈", ex:"The hawk is a fast and powerful ___.", def:"An animal that hunts and eats other animals." },
+      { w:"cluster",     syl:["clus","ter"],          t:["r","r"],     zh:"群聚",   emoji:"🍇", ex:"A ___ of bees hung from the tree branch.", def:"A group of things growing or positioned closely together." },
+      { w:"protection",  syl:["pro","tec","tion"],    t:["p","r","s"], zh:"保護",   emoji:"🛡️", ex:"The mama bear offered ___ to her cubs.", def:"The act of keeping someone or something safe from harm." },
+      { w:"survival",    syl:["sur","viv","al"],      t:["p","r","s"], zh:"生存",   emoji:"🌿", ex:"The wolf's thick fur is important for winter ___.", def:"The ability to stay alive in difficult conditions." },
+      { w:"poisonous",   syl:["poi","son","ous"],     t:["r","r","s"], zh:"有毒的", emoji:"☠️", ex:"Some frogs are ___ — don't touch them!", def:"Causing sickness or death if touched or eaten." },
+      { w:"bodyguard",   syl:["bod","y","guard"],     t:["c","c","c"], zh:"保鑣",   emoji:"🕵️", ex:"The small shrimp acted as a ___ for the blind fish.", def:"A person or animal that protects someone from danger." },
+      { w:"immune",      syl:["im","mune"],           t:["p","r"],     zh:"免疫的", emoji:"💉", ex:"Some animals are ___ to certain poisons.", def:"Protected against a disease or substance." },
+      { w:"sting",       syl:["sting"],               t:["r"],         zh:"螫刺",   emoji:"🐝", ex:"A bee can ___ you if it feels threatened.", def:"To prick or pierce with a sharp part, causing pain." },
+      { w:"afraid",      syl:["a","fraid"],           t:["r","r"],     zh:"害怕的", emoji:"😨", ex:"I was ___ of the thunder during the storm.", def:"Feeling fear; scared of something." },
+      { w:"graze",       syl:["graze"],               t:["r"],         zh:"吃草",   emoji:"🐄", ex:"Cows ___ peacefully in the green meadow.", def:"To eat grass in a field, said of animals like cows and sheep." },
+    ]},
+    "W14": { title:"Weird Friends · Week 14", words:[
+      { w:"lookout",     syl:["look","out"],          t:["c","c"],     zh:"瞭望",   emoji:"👀", ex:"One meerkat always stands ___ while the others eat.", def:"A person or animal watching for danger." },
+      { w:"gallop",      syl:["gal","lop"],           t:["r","r"],     zh:"疾馳",   emoji:"🐎", ex:"The horse began to ___ across the open field.", def:"The fastest speed a horse can run." },
+      { w:"species",     syl:["spe","cies"],          t:["r","r"],     zh:"物種",   emoji:"🦋", ex:"Many ___ of birds live in tropical rainforests.", def:"A group of animals or plants that are similar and can reproduce together." },
+      { w:"antenna",     syl:["an","ten","na"],       t:["r","r","r"], zh:"觸角",   emoji:"📡", ex:"The insect waved its ___ to sense the world.", def:"One of the thin feelers on an insect's head." },
+      { w:"detect",      syl:["de","tect"],           t:["p","r"],     zh:"偵測",   emoji:"🔍", ex:"Dogs can ___ smells that humans cannot.", def:"To discover or notice something." },
+      { w:"flee",        syl:["flee"],                t:["r"],         zh:"逃跑",   emoji:"🏃", ex:"The rabbit tried to ___ from the fox.", def:"To run away from danger." },
+      { w:"hover",       syl:["hov","er"],            t:["r","r"],     zh:"盤旋",   emoji:"🚁", ex:"The hummingbird can ___ in place while drinking nectar.", def:"To stay in one place in the air without moving forward." },
+      { w:"parasite",    syl:["par","a","site"],      t:["r","r","r"], zh:"寄生蟲", emoji:"🦠", ex:"A flea is a ___ that lives on a dog's fur.", def:"A living thing that lives on another and harms it." },
+      { w:"emerge",      syl:["e","merge"],           t:["r","r"],     zh:"出現",   emoji:"🐣", ex:"A butterfly will ___ from its cocoon when it is ready.", def:"To come out from somewhere." },
+      { w:"transportation",syl:["trans","por","ta","tion"],t:["p","r","r","s"], zh:"交通運輸", emoji:"🚌", ex:"Some animals use other animals as ___.", def:"The way people or things move from one place to another." },
+    ]},
+    "W15": { title:"Weird Friends · Week 15", words:[
+      { w:"delicate",    syl:["del","i","cate"],      t:["r","r","r"], zh:"精緻脆弱的", emoji:"🌸", ex:"The butterfly's wings are very ___.", def:"Soft, gentle, or easily broken; needing careful handling." },
+      { w:"harpoon",     syl:["har","poon"],          t:["r","r"],     zh:"魚叉",   emoji:"🪝", ex:"The hunter threw the ___ to catch the large fish.", def:"A long spear used for catching large fish or whales." },
+      { w:"dismount",    syl:["dis","mount"],         t:["p","r"],     zh:"下馬",   emoji:"🐎", ex:"She carefully ___ ed from the horse after the ride.", def:"To get down from something you were riding, like a horse." },
+      { w:"announce",    syl:["an","nounce"],         t:["r","r"],     zh:"宣布",   emoji:"📢", ex:"The principal will ___ the winner at the assembly.", def:"To say something to a group of people officially." },
+      { w:"filthy",      syl:["fil","thy"],           t:["r","r"],     zh:"骯髒的", emoji:"🤢", ex:"My boots were ___ after playing in the mud.", def:"Very dirty." },
+      { w:"rarely",      syl:["rare","ly"],           t:["r","s"],     zh:"很少地", emoji:"🦄", ex:"Snow ___ falls in this city.", def:"Not very often; almost never." },
+      { w:"threaten",    syl:["threat","en"],         t:["r","r"],     zh:"威脅",   emoji:"⚠️", ex:"The shark ___ ed the smaller fish by circling them.", def:"To say or show that you might harm someone." },
+      { w:"screech",     syl:["screech"],             t:["r"],         zh:"尖叫聲", emoji:"😱", ex:"The owl gave a ___ that woke everyone up.", def:"A loud, high-pitched, unpleasant sound." },
+      { w:"ferocious",   syl:["fe","ro","cious"],     t:["r","r","s"], zh:"兇猛的", emoji:"🦁", ex:"The ___ lion roared and scared away the jackals.", def:"Very fierce, violent, and wild." },
+    ]},
+    "W16": { title:"Wolves · Week 16", words:[
+      { w:"ideal",       syl:["i","de","al"],         t:["r","r","s"], zh:"理想的", emoji:"💫", ex:"A forest is an ___ home for wolves.", def:"Perfect or the best possible." },
+      { w:"habitat",     syl:["hab","i","tat"],       t:["r","r","r"], zh:"棲息地", emoji:"🌿", ex:"A rainforest is the natural ___ of the toucan.", def:"The natural place where an animal or plant lives." },
+      { w:"ban",         syl:["ban"],                 t:["r"],         zh:"禁止",   emoji:"🚫", ex:"The government put a ___ on hunting that animal.", def:"An official order that says something is not allowed." },
+      { w:"government",  syl:["gov","ern","ment"],    t:["r","r","s"], zh:"政府",   emoji:"🏛️", ex:"The ___ passed a new law to protect the forest.", def:"The group of people who run a country or city." },
+      { w:"livestock",   syl:["live","stock"],        t:["c","c"],     zh:"牲畜",   emoji:"🐄", ex:"Farmers raise ___ like cows and sheep.", def:"Farm animals raised to produce food or to sell." },
+      { w:"solitary",    syl:["sol","i","ta","ry"],   t:["r","r","r","r"], zh:"獨居的", emoji:"🐺", ex:"The snow leopard is a ___ animal that hunts alone.", def:"Living alone; avoiding others." },
+      { w:"biodiversity",syl:["bi","o","di","ver","si","ty"],t:["r","r","r","r","r","s"], zh:"生物多樣性", emoji:"🌍", ex:"Protecting forests helps maintain ___.", def:"The variety of different plants and animals living in one area." },
+      { w:"ecosystem",   syl:["e","co","sys","tem"],  t:["p","r","r","r"], zh:"生態系統", emoji:"🌿", ex:"Wolves are an important part of the forest ___.", def:"All the living things in an area and how they depend on each other." },
+      { w:"affect",      syl:["af","fect"],           t:["r","r"],     zh:"影響",   emoji:"📉", ex:"Pollution can ___ the health of fish in rivers.", def:"To have an effect on something; to cause a change." },
+    ]},
+    "W17": { title:"Wolves · Week 17", words:[
+      { w:"multiply",    syl:["mul","ti","ply"],      t:["r","r","r"], zh:"繁殖增加", emoji:"✖️", ex:"Rabbits can ___ very quickly — one family can become many!", def:"To increase in number; to reproduce." },
+      { w:"dam",         syl:["dam"],                 t:["r"],         zh:"水壩",   emoji:"🦫", ex:"Beavers build a ___ to block the river.", def:"A wall built across a river to stop or control the water." },
+      { w:"improve",     syl:["im","prove"],          t:["p","r"],     zh:"改善",   emoji:"📈", ex:"Practicing every day will help ___ your spelling.", def:"To make something better than it was before." },
+      { w:"benefit",     syl:["ben","e","fit"],       t:["r","r","r"], zh:"好處",   emoji:"✅", ex:"Exercise has many ___ s for your body.", def:"An advantage or good effect from something." },
+      { w:"eliminate",   syl:["e","lim","i","nate"],  t:["r","r","r","r"], zh:"消除", emoji:"❌", ex:"Wolves help ___ sick and weak deer from the herd.", def:"To completely remove or get rid of something." },
+      { w:"argue",       syl:["ar","gue"],            t:["r","r"],     zh:"爭論",   emoji:"🗣️", ex:"The two friends began to ___ about which game to play.", def:"To disagree with someone and express your different opinion." },
+      { w:"decision",    syl:["de","ci","sion"],      t:["p","r","s"], zh:"決定",   emoji:"⚖️", ex:"It was a tough ___, but she chose to stay.", def:"A choice you make after thinking carefully." },
+      { w:"intelligent", syl:["in","tel","li","gent"],t:["p","r","r","s"], zh:"聰明的", emoji:"🧠", ex:"Wolves are very ___ animals that work together as a team.", def:"Able to think, learn, and understand things quickly." },
+      { w:"reintroduce", syl:["re","in","tro","duce"],t:["p","p","r","r"], zh:"重新引入", emoji:"🐺", ex:"Scientists decided to ___ wolves into Yellowstone Park.", def:"To bring a species back to an area where it used to live." },
+    ]},
+    "W18": { title:"Wolves · Week 18", words:[
+      { w:"dangerous",   syl:["dan","ger","ous"],     t:["r","r","s"], zh:"危險的", emoji:"⚠️", ex:"It is ___ to swim in the ocean during a storm.", def:"Likely to cause harm or injury." },
+      { w:"wander",      syl:["wan","der"],           t:["r","r"],     zh:"漫遊",   emoji:"🚶", ex:"The lost puppy began to ___ through the neighborhood.", def:"To walk around without a clear direction or purpose." },
+      { w:"ranch",       syl:["ranch"],               t:["r"],         zh:"牧場",   emoji:"🤠", ex:"The family raises horses on their big ___.", def:"A large farm where cattle, horses, or sheep are raised." },
+      { w:"alert",       syl:["a","lert"],            t:["r","r"],     zh:"警覺的", emoji:"🚨", ex:"The meerkat gave an ___ call when it saw an eagle.", def:"Quick to notice things; a warning signal." },
+      { w:"worrisome",   syl:["wor","ri","some"],     t:["r","r","s"], zh:"令人擔憂的", emoji:"😟", ex:"The missing puppy was a ___ situation for everyone.", def:"Causing worry or concern." },
+      { w:"sleepless",   syl:["sleep","less"],        t:["r","s"],     zh:"失眠的", emoji:"😴", ex:"She had a ___ night worrying about the test.", def:"Unable to sleep; a night without sleep." },
+      { w:"increase",    syl:["in","crease"],         t:["p","r"],     zh:"增加",   emoji:"📈", ex:"The wolf population began to ___ after they were protected.", def:"To become greater in number or size." },
+      { w:"scavenger",   syl:["scav","en","ger"],     t:["r","r","r"], zh:"食腐動物", emoji:"🦅", ex:"A vulture is a ___ that eats animals already dead.", def:"An animal that feeds on dead animals left by other predators." },
+      { w:"reduce",      syl:["re","duce"],           t:["p","r"],     zh:"減少",   emoji:"📉", ex:"We should ___ the amount of plastic we use.", def:"To make something smaller or less in size or amount." },
+      { w:"recover",     syl:["re","cov","er"],       t:["p","r","r"], zh:"恢復",   emoji:"🌱", ex:"The forest began to ___ after the fire.", def:"To get back to a healthy or normal state after something bad happened." },
+    ]},
+  },
+  CET: {
+    "W1-2": { title:"All-Weather Friends · Week 1&2", words:[
+      { w:"heatwave",    syl:["heat","wave"],         t:["c","c"],     zh:"熱浪",   emoji:"🌡️", ex:"The ___ made everyone sweat outdoors.", def:"Very hot weather that lasts for several days." },
+      { w:"might",       syl:["might"],               t:["r"],         zh:"也許、可能", emoji:"🤔", ex:"We ___ go to the park if it doesn't rain.", def:"Used to say something is possible." },
+      { w:"tongue",      syl:["tongue"],              t:["r"],         zh:"舌頭",   emoji:"👅", ex:"A dog cools down by sticking out its ___.", def:"The soft, moveable part inside your mouth used for tasting and speaking." },
+      { w:"friendship",  syl:["friend","ship"],       t:["r","s"],     zh:"友誼",   emoji:"🤝", ex:"Our ___ grew stronger after we worked together.", def:"The relationship between people who are friends." },
+      { w:"continue",    syl:["con","tin","ue"],      t:["p","r","r"], zh:"繼續",   emoji:"▶️", ex:"Please ___ reading until the end of the chapter.", def:"To keep doing something without stopping." },
+      { w:"express",     syl:["ex","press"],          t:["p","r"],     zh:"表達",   emoji:"💬", ex:"She drew a picture to ___ how she felt.", def:"To show or say your feelings or thoughts." },
+      { w:"catch",       syl:["catch"],               t:["r"],         zh:"抓住",   emoji:"🤾", ex:"Can you ___ the ball when I throw it?", def:"To grab something that is moving through the air." },
+      { w:"hunt",        syl:["hunt"],                t:["r"],         zh:"獵取",   emoji:"🦁", ex:"Lions ___ for food at night.", def:"To search for and try to catch an animal." },
+      { w:"taste",       syl:["taste"],               t:["r"],         zh:"嚐、味道", emoji:"😋", ex:"Can you ___ the salt in this soup?", def:"To sense the flavor of something with your tongue." },
+      { w:"meal",        syl:["meal"],                t:["r"],         zh:"一餐",   emoji:"🍽️", ex:"Breakfast is my favorite ___ of the day.", def:"Food eaten at a particular time of day, like breakfast or dinner." },
+    ]},
+    "W3": { title:"All-Weather Friends · Week 3", words:[
+      { w:"seem",        syl:["seem"],                t:["r"],         zh:"看起來", emoji:"🤔", ex:"You ___ happy today — what happened?", def:"To appear to be a certain way." },
+      { w:"breeze",      syl:["breeze"],              t:["r"],         zh:"微風",   emoji:"🌬️", ex:"A cool ___ blew through the open window.", def:"A light, gentle wind." },
+      { w:"finally",     syl:["fi","nal","ly"],       t:["r","r","s"], zh:"終於",   emoji:"🎉", ex:"After a long wait, the pizza ___ arrived.", def:"After a long time or at the end of something." },
+      { w:"reply",       syl:["re","ply"],            t:["p","r"],     zh:"回覆",   emoji:"💌", ex:"Please ___ to my letter as soon as you can.", def:"To answer or respond to someone." },
+      { w:"along",       syl:["a","long"],            t:["p","r"],     zh:"沿著",   emoji:"🚶", ex:"We walked ___ the river and saw ducks.", def:"Moving from one end to the other, or together with someone." },
+      { w:"surprised",   syl:["sur","prised"],        t:["p","r"],     zh:"驚訝的", emoji:"😲", ex:"I was ___ to find a puppy in the box.", def:"Feeling shocked because something unexpected happened." },
+      { w:"reliable",    syl:["re","li","a","ble"],   t:["p","r","r","s"], zh:"可靠的", emoji:"💎", ex:"She is a ___ friend who always keeps her promises.", def:"Someone or something you can always trust and depend on." },
+      { w:"exchange",    syl:["ex","change"],         t:["p","r"],     zh:"交換",   emoji:"🔄", ex:"We decided to ___ gifts on the last day of school.", def:"To give something to someone and receive something in return." },
+      { w:"reach",       syl:["reach"],               t:["r"],         zh:"到達",   emoji:"🙌", ex:"I had to stand on a chair to ___ the top shelf.", def:"To stretch out your hand to get something, or to arrive at a place." },
+    ]},
+    "W4": { title:"All-Weather Friends · Week 4", words:[
+      { w:"envelope",    syl:["en","ve","lope"],      t:["p","r","r"], zh:"信封",   emoji:"✉️", ex:"She put the letter in an ___ and mailed it.", def:"A flat paper container used for sending letters." },
+      { w:"rip",         syl:["rip"],                 t:["r"],         zh:"撕裂",   emoji:"😱", ex:"Be careful not to ___ the page when you turn it.", def:"To tear something quickly and forcefully." },
+      { w:"rainforest",  syl:["rain","for","est"],    t:["c","c","r"], zh:"雨林",   emoji:"🌴", ex:"Many colorful birds live in the Amazon ___.", def:"A thick tropical forest with very heavy rainfall." },
+      { w:"humid",       syl:["hu","mid"],            t:["r","r"],     zh:"潮濕的", emoji:"💧", ex:"The air is very ___ in summer — everything feels sticky.", def:"Having a lot of moisture or water in the air." },
+      { w:"desert",      syl:["des","ert"],           t:["r","r"],     zh:"沙漠",   emoji:"🏜️", ex:"A camel can walk for days in the hot ___.", def:"A large, dry area of land with very little rain and few plants." },
+      { w:"address",     syl:["ad","dress"],          t:["p","r"],     zh:"地址",   emoji:"📮", ex:"Please write your name and ___ on the envelope.", def:"The location of a place, written as a street name and number." },
+      { w:"blast",       syl:["blast"],               t:["r"],         zh:"爆炸聲", emoji:"💥", ex:"The rocket launched with a loud ___.", def:"A sudden, powerful rush of air, sound, or an explosion." },
+      { w:"adventure",   syl:["ad","ven","ture"],     t:["p","r","r"], zh:"冒險",   emoji:"🗺️", ex:"Camping in the forest was a great ___.", def:"An exciting or unusual experience." },
+      { w:"pleased",     syl:["pleased"],             t:["r"],         zh:"高興的", emoji:"😊", ex:"Mom was ___ when I cleaned my room without being asked.", def:"Feeling happy or satisfied about something." },
+      { w:"drop",        syl:["drop"],                t:["r"],         zh:"滴、落下", emoji:"💧", ex:"A tiny ___ of rain landed on my nose.", def:"A small amount of liquid, or to fall down." },
+    ]},
+    "W5-6": { title:"All-Weather Friends · Week 5&6", words:[
+      { w:"pile",        syl:["pile"],                t:["r"],         zh:"一堆",   emoji:"📚", ex:"There was a huge ___ of leaves in the yard.", def:"A large group of things stacked on top of each other." },
+      { w:"apartment",   syl:["a","part","ment"],     t:["r","r","s"], zh:"公寓",   emoji:"🏢", ex:"My family lives in an ___ on the fifth floor.", def:"A set of rooms in a building where one family lives." },
+      { w:"sled",        syl:["sled"],                t:["r"],         zh:"雪橇",   emoji:"🛷", ex:"We rode the ___ down the snowy hill.", def:"A flat vehicle used for sliding on snow." },
+      { w:"glad",        syl:["glad"],                t:["r"],         zh:"高興的", emoji:"😄", ex:"I am so ___ that you came to my party!", def:"Feeling happy or pleased about something." },
+      { w:"worried",     syl:["wor","ried"],          t:["r","s"],     zh:"擔心的", emoji:"😟", ex:"Mom looked ___ when I didn't come home on time.", def:"Feeling uneasy or anxious about something." },
+      { w:"suddenly",    syl:["sud","den","ly"],      t:["r","r","s"], zh:"突然地", emoji:"⚡", ex:"___ the lights went out and the room was dark.", def:"Happening very quickly and without warning." },
+      { w:"local",       syl:["lo","cal"],            t:["r","r"],     zh:"當地的", emoji:"📍", ex:"We buy vegetables from the ___ market every weekend.", def:"Belonging to or relating to a particular place or area nearby." },
+      { w:"suppose",     syl:["sup","pose"],          t:["r","r"],     zh:"假設",   emoji:"💭", ex:"I ___ it will rain today since the sky looks cloudy.", def:"To think or believe that something is probably true." },
+      { w:"accidentally",syl:["ac","ci","den","tal","ly"],t:["r","r","r","r","s"], zh:"不小心地", emoji:"😅", ex:"I ___ spilled juice on my homework.", def:"Happening by mistake, not on purpose." },
+      { w:"respond",     syl:["re","spond"],          t:["p","r"],     zh:"回應",   emoji:"💬", ex:"Please ___ to the question in a full sentence.", def:"To answer or react to something." },
+    ]},
+    "W7": { title:"All-Weather Friends · Week 7", words:[
+      { w:"spin",        syl:["spin"],                t:["r"],         zh:"旋轉",   emoji:"🌀", ex:"Watch the top ___ around and around.", def:"To turn around quickly in circles." },
+      { w:"grin",        syl:["grin"],                t:["r"],         zh:"咧嘴笑", emoji:"😁", ex:"She gave a big ___ when she saw her birthday cake.", def:"A wide, happy smile showing your teeth." },
+      { w:"tundra",      syl:["tun","dra"],           t:["r","r"],     zh:"凍原",   emoji:"🌨️", ex:"Polar bears live on the cold, flat ___.", def:"A large, treeless area in the Arctic with frozen ground." },
+      { w:"almost",      syl:["al","most"],           t:["r","r"],     zh:"幾乎",   emoji:"⏱️", ex:"I have ___ finished my homework — just one more page.", def:"Very nearly but not quite." },
+      { w:"prove",       syl:["prove"],               t:["r"],         zh:"證明",   emoji:"🔬", ex:"The scientist did an experiment to ___ her idea.", def:"To show that something is true with evidence or facts." },
+      { w:"swing",       syl:["swing"],               t:["r"],         zh:"擺動",   emoji:"🌊", ex:"The monkey likes to ___ from branch to branch.", def:"To move back and forth or from side to side." },
+      { w:"trunk",       syl:["trunk"],               t:["r"],         zh:"樹幹、象鼻", emoji:"🐘", ex:"The elephant lifted the log with its long ___.", def:"The main part of a tree, or an elephant's long nose." },
+      { w:"bookshelf",   syl:["book","shelf"],        t:["c","c"],     zh:"書架",   emoji:"📚", ex:"Please put your book back on the ___ when you finish.", def:"A piece of furniture with shelves used to hold books." },
+      { w:"crawl",       syl:["crawl"],               t:["r"],         zh:"爬行",   emoji:"🐛", ex:"The baby can ___ now but not walk yet.", def:"To move on your hands and knees close to the ground." },
+      { w:"lay",         syl:["lay"],                 t:["r"],         zh:"放下",   emoji:"🛏️", ex:"___ your coat on the chair, not the floor.", def:"To put something down in a flat position." },
+    ]},
+    "W10-11": { title:"Hummingbird's Garden · Week 10&11", words:[
+      { w:"nearby",      syl:["near","by"],           t:["r","r"],     zh:"附近的", emoji:"📍", ex:"There is a friendly dog living in the ___ house.", def:"Not far away; close to here." },
+      { w:"chirp",       syl:["chirp"],               t:["r"],         zh:"啾啾叫", emoji:"🐦", ex:"The birds began to ___ at sunrise.", def:"The short, high sound a small bird makes." },
+      { w:"courage",     syl:["cour","age"],          t:["r","s"],     zh:"勇氣",   emoji:"🦁", ex:"It took a lot of ___ to speak in front of the class.", def:"The ability to do something scary or difficult without giving up." },
+      { w:"wisdom",      syl:["wis","dom"],           t:["r","s"],     zh:"智慧",   emoji:"🦉", ex:"The old teacher shared her ___ with the students.", def:"The ability to make good choices based on knowledge and experience." },
+      { w:"rescue",      syl:["res","cue"],           t:["r","r"],     zh:"拯救",   emoji:"🚑", ex:"The firefighter helped ___ the cat from the tall tree.", def:"To save someone or something from danger." },
+      { w:"howl",        syl:["howl"],                t:["r"],         zh:"嚎叫",   emoji:"🐺", ex:"You could hear the wolf ___ at the full moon.", def:"To make a long, loud, sad sound, like a wolf or a dog." },
+      { w:"gather",      syl:["gath","er"],           t:["r","s"],     zh:"聚集",   emoji:"🤝", ex:"We ___ around the campfire to tell stories.", def:"To come together in a group, or to collect things." },
+      { w:"crowded",     syl:["crowd","ed"],          t:["r","s"],     zh:"擁擠的", emoji:"👥", ex:"The bus was so ___ that we had to stand.", def:"Full of too many people or things with little space." },
+      { w:"stray",       syl:["stray"],               t:["r"],         zh:"流浪的", emoji:"🐈", ex:"We found a ___ kitten in the alley and brought it home.", def:"An animal with no home that wanders around." },
+      { w:"scurry",      syl:["scur","ry"],           t:["r","r"],     zh:"急忙跑", emoji:"🐭", ex:"The little mouse would ___ across the kitchen floor.", def:"To run with short, quick steps." },
+    ]},
+    "W12-13": { title:"Hummingbird's Garden · Week 12&13", words:[
+      { w:"confused",    syl:["con","fused"],         t:["p","r"],     zh:"困惑的", emoji:"😕", ex:"I was ___ by the math problem until my teacher explained it.", def:"Unable to understand or think clearly." },
+      { w:"edge",        syl:["edge"],                t:["r"],         zh:"邊緣",   emoji:"⚡", ex:"Don't stand too close to the ___ of the cliff.", def:"The outer or furthest part of something." },
+      { w:"recognize",   syl:["rec","og","nize"],     t:["r","r","r"], zh:"認出",   emoji:"👀", ex:"Can you ___ your friend's voice on the phone?", def:"To know who or what something is because you have seen it before." },
+      { w:"twinkle",     syl:["twin","kle"],          t:["r","r"],     zh:"閃爍",   emoji:"✨", ex:"Stars ___ brightly in the night sky.", def:"To shine with a small, flickering light." },
+      { w:"remarkable",  syl:["re","mark","a","ble"], t:["p","r","r","s"], zh:"非凡的", emoji:"🌟", ex:"The juggler did a ___ trick with five balls.", def:"Very unusual or impressive; worth noticing." },
+      { w:"beg",         syl:["beg"],                 t:["r"],         zh:"乞求",   emoji:"🙏", ex:"The puppy would ___ for a piece of my sandwich.", def:"To ask for something very strongly and desperately." },
+      { w:"tremble",     syl:["trem","ble"],          t:["r","r"],     zh:"顫抖",   emoji:"😰", ex:"My hands began to ___ when I walked on stage.", def:"To shake slightly, usually from fear or cold." },
+      { w:"rush",        syl:["rush"],                t:["r"],         zh:"衝、急忙", emoji:"🏃", ex:"We had to ___ to the car because it started raining.", def:"To move or do something very quickly." },
+      { w:"float",       syl:["float"],               t:["r"],         zh:"漂浮",   emoji:"🎈", ex:"A rubber duck will ___ in the bathtub.", def:"To rest or move slowly on the surface of water or in the air." },
+    ]},
+    "W14": { title:"Hummingbird's Garden · Week 14", words:[
+      { w:"firmly",      syl:["firm","ly"],           t:["r","s"],     zh:"堅定地", emoji:"💪", ex:"She held ___ to the rope so she wouldn't fall.", def:"In a strong, steady way that doesn't move easily." },
+      { w:"swiftly",     syl:["swift","ly"],          t:["r","s"],     zh:"迅速地", emoji:"⚡", ex:"The cheetah ran ___ across the open field.", def:"Very quickly, with great speed." },
+      { w:"disappointed",syl:["dis","ap","point","ed"],t:["p","r","r","s"], zh:"失望的", emoji:"😔", ex:"He was ___ when his team lost the game.", def:"Feeling sad because something did not happen the way you hoped." },
+      { w:"observe",     syl:["ob","serve"],          t:["r","r"],     zh:"觀察",   emoji:"🔭", ex:"Scientists ___ animals in the wild to learn their habits.", def:"To watch something carefully and pay close attention to it." },
+      { w:"mystery",     syl:["mys","ter","y"],       t:["r","r","r"], zh:"謎",     emoji:"🔍", ex:"Where the missing cookie went was a total ___.", def:"Something that is unknown or hard to explain." },
+      { w:"swamp",       syl:["swamp"],               t:["r"],         zh:"沼澤",   emoji:"🌿", ex:"The frog jumped into the muddy ___.", def:"A wet, muddy area of low land often covered with water and plants." },
+      { w:"specific",    syl:["spe","cif","ic"],      t:["r","r","r"], zh:"特定的", emoji:"🎯", ex:"Can you give me a ___ example of what you mean?", def:"Clearly defined; relating to one particular thing." },
+      { w:"national",    syl:["na","tion","al"],      t:["r","s","s"], zh:"國家的", emoji:"🏛️", ex:"The ___ flag is red, white, and blue.", def:"Relating to a whole country." },
+      { w:"president",   syl:["pres","i","dent"],     t:["r","r","r"], zh:"總統",   emoji:"🏛️", ex:"The ___ gave a speech on TV.", def:"The leader of a country or an organization." },
+      { w:"civil",       syl:["civ","il"],            t:["r","r"],     zh:"公民的", emoji:"🏛️", ex:"Be ___ to others even when you disagree.", def:"Polite and respectful; relating to citizens or the government." },
+    ]},
+    "W15": { title:"Hummingbird's Garden · Week 15", words:[
+      { w:"useless",     syl:["use","less"],          t:["r","s"],     zh:"無用的", emoji:"🗑️", ex:"My flashlight is ___ because the battery is dead.", def:"Having no use or purpose; not working properly." },
+      { w:"command",     syl:["com","mand"],          t:["p","r"],     zh:"命令",   emoji:"📢", ex:"The captain gave the ___ to set sail.", def:"An order or instruction that someone must follow." },
+      { w:"realize",     syl:["re","al","ize"],       t:["p","r","r"], zh:"意識到", emoji:"💡", ex:"I ___ I forgot my homework only when I got to school.", def:"To become aware of or understand something." },
+      { w:"sink",        syl:["sink"],                t:["r"],         zh:"下沉",   emoji:"🚢", ex:"A stone will ___ to the bottom of the pond.", def:"To go down below the surface of water." },
+      { w:"surrounding", syl:["sur","round","ing"],   t:["p","r","s"], zh:"周圍的", emoji:"🌿", ex:"The little house was hidden in a forest ___.", def:"The area or things around something." },
+      { w:"sometimes",   syl:["some","times"],        t:["c","c"],     zh:"有時候", emoji:"⏰", ex:"___ I like to read before I go to sleep.", def:"Occasionally, but not always." },
+      { w:"someday",     syl:["some","day"],          t:["c","c"],     zh:"總有一天", emoji:"🌅", ex:"___ I hope to travel around the world.", def:"At some future time, though not certain when." },
+      { w:"enjoy",       syl:["en","joy"],            t:["p","r"],     zh:"享受",   emoji:"😄", ex:"I ___ eating ice cream on a hot day.", def:"To get pleasure or happiness from something." },
+      { w:"invite",      syl:["in","vite"],           t:["p","r"],     zh:"邀請",   emoji:"📩", ex:"I want to ___ my friends to my birthday party.", def:"To ask someone to come to a place or event." },
+      { w:"couch",       syl:["couch"],               t:["r"],         zh:"沙發",   emoji:"🛋️", ex:"After school, I love to sit on the ___ and watch TV.", def:"A long, soft seat that several people can sit on together." },
+    ]},
+    "W16-17": { title:"Hummingbird's Garden · Week 16&17", words:[
+      { w:"notice",      syl:["no","tice"],           t:["r","r"],     zh:"注意到", emoji:"👀", ex:"Did you ___ that the classroom has a new poster?", def:"To become aware of something by seeing or hearing it." },
+      { w:"shine",       syl:["shine"],               t:["r"],         zh:"發光",   emoji:"☀️", ex:"The sun will ___ again after the rain stops.", def:"To give off bright light." },
+      { w:"extraordinary",syl:["ex","traor","di","na","ry"],t:["p","r","r","r","r"], zh:"非凡的", emoji:"🌟", ex:"The gymnast did an ___ backflip everyone cheered about.", def:"Very unusual, special, or impressive; far beyond what is normal." },
+      { w:"sip",         syl:["sip"],                 t:["r"],         zh:"小口喝", emoji:"☕", ex:"She took a small ___ of the hot soup.", def:"To drink a small amount slowly." },
+      { w:"report",      syl:["re","port"],           t:["p","r"],     zh:"報告",   emoji:"📝", ex:"I wrote a ___ about dolphins for science class.", def:"A spoken or written account of something that happened." },
+      { w:"trophy",      syl:["tro","phy"],           t:["r","r"],     zh:"獎盃",   emoji:"🏆", ex:"Our soccer team won a golden ___ at the tournament.", def:"A prize, usually a cup or statue, given to the winner of a competition." },
+      { w:"towards",     syl:["to","wards"],          t:["r","r"],     zh:"朝著",   emoji:"➡️", ex:"The puppy ran ___ me when I called its name.", def:"In the direction of something." },
+      { w:"prey",        syl:["prey"],                t:["r"],         zh:"獵物",   emoji:"🦌", ex:"A fox is very quiet as it sneaks up on its ___.", def:"An animal that is hunted and eaten by another animal." },
+      { w:"businessman", syl:["busi","ness","man"],   t:["c","c","c"], zh:"商人",   emoji:"💼", ex:"The ___ flew to many cities to meet his clients.", def:"A man who works in business, usually running a company." },
+    ]},
+  }
+};
+
+// ======================================================
+// STATE
+// ======================================================
+let currentList = 'FET';
+let selectedWeeks = [];
+let practiceWords = [];
+let currentWordIdx = 0;
+let tileBag = [];
+let placed = [];
+let stars = 0;
+let hintsLeft = 3;
+let wrongWords = [];
+let answered = false;
+let hintMode = 'ex';
+let wordRevealed = false;
+let studyWords = [];
+let studyIdx = 0;
+
+window.addEventListener('load', () => selectList('FET'));
+
+function selectList(list) {
+  currentList = list;
+  selectedWeeks = [];
+  document.getElementById('tab-FET').classList.toggle('active', list === 'FET');
+  document.getElementById('tab-CET').classList.toggle('active', list === 'CET');
+  renderWeekGrid();
+}
+
+function renderWeekGrid() {
+  const data = WORD_DATA[currentList];
+  const keys = Object.keys(data);
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = '';
+  const allSel = selectedWeeks.length === keys.length;
+  const allBtn = mkEl('div', 'week-btn all-btn' + (allSel ? ' selected' : ''));
+  const total = keys.reduce((s,k) => s + data[k].words.length, 0);
+  allBtn.innerHTML = `🌟 All Weeks<br><small style="font-weight:normal">${total} words</small>`;
+  allBtn.onclick = () => { selectedWeeks = allSel ? [] : [...keys]; renderWeekGrid(); };
+  grid.appendChild(allBtn);
+  keys.forEach(k => {
+    const sel = selectedWeeks.includes(k);
+    const btn = mkEl('div', 'week-btn' + (sel ? ' selected' : ''));
+    btn.innerHTML = `<strong>${k}</strong><br><small style="font-weight:normal;font-size:0.82em">${data[k].title}</small><br><small>${data[k].words.length} words</small>`;
+    btn.onclick = () => { selectedWeeks = sel ? selectedWeeks.filter(w => w !== k) : [...selectedWeeks, k]; renderWeekGrid(); };
+    grid.appendChild(btn);
+  });
+}
+
+function getActiveWords() {
+  const data = WORD_DATA[currentList];
+  const keys = selectedWeeks.length > 0 ? selectedWeeks : Object.keys(data);
+  const result = [];
+  keys.forEach(k => { if (data[k]) data[k].words.forEach(w => result.push({...w, weekKey:k, weekTitle:data[k].title})); });
+  return result;
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function startGame(mode) {
+  const words = getActiveWords();
+  if (!words.length) { alert('Please select at least one week!'); return; }
+  if (mode === 'study') {
+    studyWords = words; studyIdx = 0; renderStudyWord(); showScreen('study');
+  } else {
+    practiceWords = shuffle([...words]); currentWordIdx = 0; stars = 0; hintsLeft = 3; wrongWords = [];
+    renderPracticeWord(); showScreen('practice');
+  }
+}
+
+const PREFIX_MEANINGS = {
+  "re":"again → re + build = build <em>again</em>","un":"not / opposite → un + used = <em>not</em> used",
+  "dis":"not / away → dis + appear = <em>not</em> appear","pre":"before → pre + pare = get ready <em>before</em>",
+  "in":"not / into → in + hale = breathe <em>into</em>","im":"not / into → im + prove = move <em>into</em> better",
+  "ex":"out / from → ex + claim = cry <em>out</em>","com":"together / with → com + municate = share <em>with</em> others",
+  "con":"together / with → con + nect = join <em>together</em>","be":"make / around → be + come = <em>make</em> into",
+  "de":"down / away → de + scribe = write <em>down</em>","en":"make / put into → en + ter = go <em>into</em>",
+  "a":"to / at → a + gainst = placed <em>at</em> something","sur":"over / above → sur + face = <em>above</em> the surface",
+  "mis":"wrong → mis + take = take the <em>wrong</em> way","pro":"forward / for → pro + tect = push <em>forward</em> to protect",
+  "trans":"across → trans + port = carry <em>across</em>","bi":"two → bi + cycle = two wheels",
+  "ob":"against / toward → ob + serve = look <em>toward</em>","af":"to / toward → af + fect = act <em>toward</em>",
+  "an":"not / without → an + nounce = call <em>out</em>","al":"all / completely",
+  "sup":"under / up → sup + pose = place <em>under</em>","mul":"many → mul + tiple = <em>many</em> times",
+};
+const SUFFIX_MEANINGS = {
+  "ing":"-ing → action happening right now","ful":"-ful → full of (e.g. power<em>ful</em>)",
+  "ly":"-ly → in a ___ way (e.g. slow<em>ly</em>)","tion":"-tion → the act or result of",
+  "sion":"-sion → the act or result of","er":"-er → a person or thing that does something",
+  "ness":"-ness → the state of being","able":"-able → able to be",
+  "ble":"-ble → able to be","ment":"-ment → the result or process of",
+  "ous":"-ous → full of / having the quality of","cious":"-cious → having the quality of",
+  "y":"-y → having the quality of","ty":"-ty → state or quality",
+  "dom":"-dom → the state of / a realm","al":"-al → relating to",
+  "ed":"-ed → past tense / done","ence":"-ence → state or quality of",
+  "some":"-some → tending to be / characterized by","less":"-less → without",
+  "ship":"-ship → the state or condition of","ry":"-ry → relating to / place for",
+  "age":"-age → action / result of","ize":"-ize → to make or become",
+  "ist":"-ist → a person who does or believes","ry":"-ry → having the quality of",
+  "al":"-al → relating to","ful":"-ful → full of",
+};
+
+function buildWordTip(w) {
+  const tips = [];
+  tips.push(`📖 <strong>${w.syl.length} syllable${w.syl.length>1?'s':''}</strong>: ${w.syl.join(' · ')}`);
+  if (w.t.includes('p')) {
+    w.syl.filter((_,i)=>w.t[i]==='p').forEach(pfx => {
+      const m = PREFIX_MEANINGS[pfx.toLowerCase()];
+      tips.push(`🟠 <strong>Prefix</strong> <span style="background:#fff3e0;color:#bf360c;border:1px solid #ffcc80;padding:2px 8px;border-radius:6px;font-weight:bold">${pfx}-</span>${m?` means: ${m.split('→')[0]}`:''}` + (m?`<br>&nbsp;&nbsp;&nbsp;💬 <em>${m}</em>`:''));
+    });
+  }
+  if (w.t.includes('s')) {
+    w.syl.filter((_,i)=>w.t[i]==='s').forEach(sfx => {
+      const m = SUFFIX_MEANINGS[sfx.toLowerCase()];
+      tips.push(`🟢 <strong>Suffix</strong> <span style="background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;padding:2px 8px;border-radius:6px;font-weight:bold">-${sfx}</span>${m?` means: ${m.split('→')[0]}`:''}` + (m?`<br>&nbsp;&nbsp;&nbsp;💬 <em>${m}</em>`:''));
+    });
+  }
+  if (w.t.includes('c')) {
+    const parts = w.syl.filter((_,i)=>w.t[i]==='c');
+    tips.push(`🟣 <strong>Compound word</strong>: ${parts.map(p=>`<span style="background:#f3e5f5;color:#4a148c;border:1px solid #ce93d8;padding:2px 8px;border-radius:6px;font-weight:bold">${p}</span>`).join(' + ')}<br>&nbsp;&nbsp;&nbsp;💬 Two or more words joined together to make a new meaning!`);
+  }
+  return tips.join('<br>');
+}
+
+function renderStudyWord() {
+  const w = studyWords[studyIdx];
+  document.getElementById('study-prog').textContent = `${studyIdx+1} / ${studyWords.length}`;
+  document.getElementById('study-prev').disabled = studyIdx === 0;
+  document.getElementById('study-next').disabled = studyIdx === studyWords.length - 1;
+  const sylHTML = w.syl.map((s,i) => {
+    const m = TYPE_META[w.t[i]] || TYPE_META.r;
+    return `<span style="background:${m.bg};color:${m.color};border:2px solid ${m.border};padding:8px 15px;border-radius:10px;margin:4px;display:inline-block;font-size:1.3em;font-weight:bold">${s}</span>`;
+  }).join('');
+  const types = [...new Set(w.t)];
+  let legendHTML = '';
+  if (types.length > 1 || types[0] !== 'r') {
+    legendHTML = '<div class="legend" style="margin-top:12px">' + types.map(tp => {
+      const m = TYPE_META[tp] || TYPE_META.r;
+      return `<div class="legend-item"><div class="legend-dot" style="background:${m.bg};border-color:${m.border}"></div><span style="color:${m.color};font-weight:bold">${m.label}</span></div>`;
+    }).join('') + '</div>';
+  }
+  const exHTML = w.ex.replace('___', `<span style="display:inline-block;min-width:80px;border-bottom:3px solid #1565c0;color:#1565c0;font-weight:bold;text-align:center">${w.w}</span>`);
+  document.getElementById('study-content').innerHTML = `
+    <div class="study-card">
+      <div style="font-size:0.82em;color:#999;margin-bottom:5px">${w.weekKey} · ${w.weekTitle}</div>
+      <div class="study-word">${w.w}</div>
+      <div style="font-size:1.8em;margin:4px 0">${w.emoji||''}</div>
+      <div style="font-size:1em;color:#764ba2;font-weight:bold;margin-bottom:8px">${w.zh}</div>
+      <div class="study-dot">${w.syl.join(' · ')}</div>
+      <div>${sylHTML}</div>${legendHTML}
+    </div>
+    <div class="hint-card definition" style="margin-top:12px"><div class="hint-label">📖 Definition</div><div>${w.def}</div></div>
+    <div class="hint-card example"><div class="hint-label">📝 Example Sentence</div><div>${exHTML}</div></div>
+    <div class="info-box green" style="margin-top:8px">${buildWordTip(w)}</div>`;
+}
+
+function studyNav(dir) { studyIdx = Math.max(0, Math.min(studyWords.length-1, studyIdx+dir)); renderStudyWord(); }
+
+function renderPracticeWord() {
+  const w = practiceWords[currentWordIdx];
+  answered = false; wordRevealed = false; hintMode = 'ex';
+  document.getElementById('prac-prog').textContent = `${currentWordIdx+1} / ${practiceWords.length}`;
+  document.getElementById('prac-stars').textContent = `⭐ ${stars}`;
+  document.getElementById('prac-week-label').textContent = `${w.weekKey} · ${w.weekTitle}`;
+  document.getElementById('prac-feedback').textContent = '';
+  document.getElementById('prac-feedback').className = 'feedback';
+  document.getElementById('answer-zone').className = 'answer-zone';
+  document.getElementById('check-btn').style.display = '';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('hint-btn').disabled = hintsLeft === 0;
+  document.getElementById('reveal-btn').style.display = '';
+  document.getElementById('revealed-area').innerHTML = '';
+  document.getElementById('hint-card').className = 'hint-card example';
+  document.getElementById('hint-card').innerHTML = `
+    <div class="hint-label" id="hint-label">📝 Example Sentence</div>
+    <div id="hint-text"></div>
+    <div class="hint-toggle">
+      <button class="htab on" id="htab-ex"  onclick="switchHint('ex')">📝 Example</button>
+      <button class="htab"    id="htab-def" onclick="switchHint('def')">📖 Definition</button>
+    </div>`;
+  renderHintCard();
+  tileBag = shuffle(w.syl.map((s,i) => ({text:s, type:w.t[i], placed:false, origIdx:i})));
+  placed = [];
+  renderAnswerZone(); renderScrambleZone();
+}
+
+function renderHintCard() {
+  const w = practiceWords[currentWordIdx];
+  const card = document.getElementById('hint-card');
+  const label = document.getElementById('hint-label');
+  const text = document.getElementById('hint-text');
+  if (hintMode === 'ex') {
+    card.className = 'hint-card example'; label.textContent = '📝 Example Sentence';
+    text.innerHTML = w.ex.replace('___', '<span class="blank"></span>');
+  } else {
+    card.className = 'hint-card definition'; label.textContent = '📖 Definition'; text.innerHTML = w.def;
+  }
+}
+
+function switchHint(mode) {
+  hintMode = mode;
+  document.getElementById('htab-ex').classList.toggle('on', mode === 'ex');
+  document.getElementById('htab-def').classList.toggle('on', mode === 'def');
+  renderHintCard();
+}
+
+function revealWord() {
+  if (wordRevealed || answered) return;
+  if (hintsLeft <= 0) { document.getElementById('prac-feedback').textContent = '⚠️ No hints left!'; document.getElementById('prac-feedback').className = 'feedback err'; return; }
+  hintsLeft--; wordRevealed = true;
+  const w = practiceWords[currentWordIdx];
+  document.getElementById('hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('hint-btn').disabled = hintsLeft === 0;
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('revealed-area').innerHTML = `<div class="revealed-word">🔍 ${w.w}</div>`;
+  if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+}
+
+function renderScrambleZone() {
+  const zone = document.getElementById('scramble-zone'); zone.innerHTML = '';
+  tileBag.forEach((tile, idx) => {
+    const m = TYPE_META[tile.type] || TYPE_META.r;
+    const el = mkEl('div', 'tile t-' + tile.type + (tile.placed ? ' used' : ''));
+    el.textContent = tile.text; el.style.background = m.bg; el.style.color = m.color; el.style.borderColor = m.border;
+    if (!tile.placed) el.onclick = () => placeTile(idx);
+    zone.appendChild(el);
+  });
+}
+
+function renderAnswerZone() {
+  const zone = document.getElementById('answer-zone');
+  if (placed.length === 0) { zone.innerHTML = '<span style="color:#ccc;font-size:0.95em">click syllables below to build the word →</span>'; return; }
+  zone.innerHTML = '';
+  placed.forEach((tile, idx) => {
+    const m = TYPE_META[tile.type] || TYPE_META.r;
+    const el = mkEl('div', 'tile placed t-' + tile.type);
+    el.textContent = tile.text; el.style.background = m.bg; el.style.color = m.color; el.style.borderColor = m.border;
+    el.title = 'Click to remove'; el.onclick = () => removeTile(idx);
+    zone.appendChild(el);
+  });
+}
+
+function placeTile(bagIdx) {
+  const tile = tileBag[bagIdx]; if (tile.placed) return;
+  tile.placed = true; placed.push({text:tile.text, type:tile.type, bagIdx});
+  sfxTileClick(); renderAnswerZone(); renderScrambleZone();
+}
+
+function removeTile(placedIdx) {
+  if (answered) return;
+  const tile = placed[placedIdx]; tileBag[tile.bagIdx].placed = false;
+  placed.splice(placedIdx, 1); renderAnswerZone(); renderScrambleZone();
+}
+
+function clearAnswer() {
+  if (answered) return; placed = []; tileBag.forEach(t => t.placed = false);
+  renderAnswerZone(); renderScrambleZone();
+}
+
+function checkAnswer() {
+  if (answered) return;
+  const w = practiceWords[currentWordIdx];
+  const correct = w.syl.join('');
+  const attempt = placed.map(t => t.text).join('');
+  if (!attempt) { document.getElementById('prac-feedback').textContent = '⚠️ Place some syllables first!'; document.getElementById('prac-feedback').className = 'feedback err'; return; }
+  const zone = document.getElementById('answer-zone');
+  if (attempt === correct) {
+    answered = true; sfxCorrect(); speakWord(w.w, w.zh, 600);
+    zone.className = 'answer-zone correct pop';
+    document.getElementById('prac-feedback').textContent = '🎉 Correct! Awesome! ⭐';
+    document.getElementById('prac-feedback').className = 'feedback ok';
+    if (!wordRevealed) stars++;
+    document.getElementById('prac-stars').textContent = `⭐ ${stars}`;
+    document.getElementById('check-btn').style.display = 'none';
+    document.getElementById('next-btn').style.display = '';
+    document.getElementById('hint-btn').disabled = true;
+    document.getElementById('reveal-btn').style.display = 'none';
+    const emojiHtml = w.emoji ? `<span class="word-emoji">${w.emoji}</span>` : '';
+    document.getElementById('revealed-area').innerHTML = `${emojiHtml}<div class="revealed-word">✅ ${w.w}</div>`;
+    const hc = document.getElementById('hint-card'); hc.className = 'info-box green'; hc.innerHTML = buildWordTip(w);
+  } else {
+    sfxWrong(); speakWord(w.w, w.zh, 500);
+    zone.className = 'answer-zone wrong'; zone.classList.add('shake');
+    setTimeout(() => zone.classList.remove('shake'), 500);
+    document.getElementById('prac-feedback').textContent = '❌ Not quite! Try again 💪';
+    document.getElementById('prac-feedback').className = 'feedback err';
+    if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+  }
+}
+
+function useHint() {
+  if (hintsLeft <= 0 || answered) return;
+  const w = practiceWords[currentWordIdx];
+  const nextPos = placed.length; if (nextPos >= w.syl.length) return;
+  const targetSyl = w.syl[nextPos];
+  const bagIdx = tileBag.findIndex(t => !t.placed && t.text === targetSyl);
+  if (bagIdx >= 0) { hintsLeft--; sfxHint(); placeTile(bagIdx); document.getElementById('hint-btn').textContent = `💡 Hint (${hintsLeft})`; document.getElementById('hint-btn').disabled = hintsLeft === 0; if (!wrongWords.includes(w.w)) wrongWords.push(w.w); }
+}
+
+function nextWord() { currentWordIdx++; if (currentWordIdx >= practiceWords.length) showResults(); else renderPracticeWord(); }
+
+function showResults() {
+  sfxCelebration();
+  const total = practiceWords.length; const pct = Math.round(stars / total * 100);
+  let title, emoji;
+  if (pct >= 90) { title="🌟 Spelling Star! 🌟"; emoji="⭐⭐⭐"; }
+  else if (pct >= 70) { title="🎉 Great Work! 🎉"; emoji="⭐⭐"; }
+  else { title="💪 Keep Trying! 💪"; emoji="⭐"; }
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-emoji').textContent = emoji;
+  document.getElementById('results-summary').textContent = `You got ${stars} out of ${total} correct! (${pct}%)`;
+  const bar = document.getElementById('results-bar'); bar.style.width = '0%'; setTimeout(() => bar.style.width = pct + '%', 100);
+  const grid = document.getElementById('results-grid'); grid.innerHTML = '';
+  practiceWords.forEach(w => {
+    const wrong = wrongWords.includes(w.w);
+    const el = mkEl('div', 'result-item ' + (wrong ? 'err-r' : 'ok-r'));
+    el.innerHTML = `${wrong?'❌':'✅'} <strong>${w.w}</strong><span style="color:#666;font-size:0.82em;margin-left:4px">${w.syl.join('·')}</span>`;
+    grid.appendChild(el);
+  });
+  showScreen('results');
+}
+
+let _audioCtx = null; let soundEnabled = true;
+function getCtx() { if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (_audioCtx.state === 'suspended') _audioCtx.resume(); return _audioCtx; }
+function playTone(freq, type, startTime, duration, vol = 0.28) { const ctx = getCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = type; osc.frequency.setValueAtTime(freq, startTime); gain.gain.setValueAtTime(vol, startTime); gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration); osc.start(startTime); osc.stop(startTime + duration + 0.05); }
+function sfxTileClick() { if (!soundEnabled) return; const ctx = getCtx(); playTone(700,'sine',ctx.currentTime,0.07,0.18); }
+function sfxCorrect() { if (!soundEnabled) return; const ctx = getCtx(); const t = ctx.currentTime; playTone(523,'triangle',t,0.18,0.30); playTone(659,'triangle',t+0.13,0.18,0.30); playTone(784,'triangle',t+0.26,0.30,0.35); playTone(1047,'triangle',t+0.39,0.30,0.25); }
+function sfxWrong() { if (!soundEnabled) return; const ctx = getCtx(); const t = ctx.currentTime; playTone(220,'sawtooth',t,0.12,0.22); playTone(180,'sawtooth',t+0.14,0.18,0.18); }
+function sfxHint() { if (!soundEnabled) return; const ctx = getCtx(); const t = ctx.currentTime; playTone(880,'sine',t,0.12,0.20); playTone(660,'sine',t+0.10,0.14,0.15); }
+function sfxCelebration() { if (!soundEnabled) return; const ctx = getCtx(); const t = ctx.currentTime; [[523,'triangle',.30],[659,'triangle',.28],[784,'triangle',.28],[1047,'triangle',.32]].forEach(([f,tp,v],i) => playTone(f,tp,t+i*0.11,0.22,v)); [523,659,784,1047].forEach(f => playTone(f,'triangle',t+0.55,0.7,0.18)); }
+function toggleSound() { soundEnabled = !soundEnabled; const btn = document.getElementById('sound-toggle'); btn.textContent = soundEnabled ? '🔊' : '🔇'; btn.title = soundEnabled ? 'Sound ON (click to mute)' : 'Sound OFF (click to unmute)'; }
+
+let _cachedVoices = [];
+if ('speechSynthesis' in window) { const _tryCache = () => { const v = window.speechSynthesis.getVoices(); if (v.length) _cachedVoices = v; }; _tryCache(); window.speechSynthesis.onvoiceschanged = _tryCache; }
+function _pickEnVoice() { const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices(); return voices.find(v => v.lang === 'en-US' && /samantha|zira|susan|karen|victoria|serena|female|woman/i.test(v.name) && v.localService) || voices.find(v => v.lang === 'en-US' && v.localService) || voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang.startsWith('en') && v.localService) || voices.find(v => v.lang.startsWith('en')) || null; }
+function _pickZhVoice() { const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices(); return voices.find(v => v.lang === 'zh-TW' && v.localService) || voices.find(v => v.lang === 'zh-TW') || voices.find(v => v.lang.startsWith('zh')) || null; }
+function speakWord(word, zh, delayMs = 0) {
+  if (!soundEnabled) return; if (!('speechSynthesis' in window)) return;
+  setTimeout(() => {
+    window.speechSynthesis.cancel();
+    const uttEn = new SpeechSynthesisUtterance(word); uttEn.lang = 'en-US'; uttEn.rate = 0.85; uttEn.pitch = 1.1;
+    const enVoice = _pickEnVoice(); if (enVoice) uttEn.voice = enVoice;
+    window.speechSynthesis.speak(uttEn);
+    if (zh) { const uttZh = new SpeechSynthesisUtterance(zh); uttZh.lang = 'zh-TW'; uttZh.rate = 0.9; uttZh.pitch = 1.1; const zhVoice = _pickZhVoice(); if (zhVoice) uttZh.voice = zhVoice; window.speechSynthesis.speak(uttZh); }
+  }, delayMs);
+}
+
+function shuffle(arr) { for (let i = arr.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+function mkEl(tag, cls) { const el = document.createElement(tag); if (cls) el.className = cls; return el; }
+</script>
+</body>
+</html>
