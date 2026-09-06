@@ -816,7 +816,7 @@ function renderPracticeWord() {
   answered = false; wordRevealed = false; hintMode = 'ex';
   document.getElementById('prac-prog').textContent = `${currentWordIdx+1} / ${practiceWords.length}`;
   document.getElementById('prac-stars').textContent = `⭐ ${stars}`;
-  document.getElementById('prac-total-stars').textContent = `總計 ${loadTotalStars()}⭐`;
+  document.getElementById('prac-total-stars').textContent = `累積 ${loadTotalStars()}⭐`;
   document.getElementById('prac-week-label').textContent = `${w.weekKey} · ${w.weekTitle}`;
   document.getElementById('prac-feedback').textContent = '';
   document.getElementById('prac-feedback').className = 'feedback';
@@ -926,14 +926,7 @@ function checkAnswer() {
     zone.className = 'answer-zone correct pop';
     document.getElementById('prac-feedback').textContent = '🎉 Correct! Awesome! ⭐';
     document.getElementById('prac-feedback').className = 'feedback ok';
-    if (!wordRevealed) {
-      stars++;
-      const oldTotal = loadTotalStars();
-      const newTotal = oldTotal + 1;
-      saveTotalStars(newTotal);
-      checkMilestones(oldTotal, newTotal);
-      document.getElementById('prac-total-stars').textContent = `總計 ${newTotal}⭐`;
-    }
+    if (!wordRevealed) stars++;
     document.getElementById('prac-stars').textContent = `⭐ ${stars}`;
     document.getElementById('check-btn').style.display = 'none';
     document.getElementById('next-btn').style.display = '';
@@ -970,13 +963,24 @@ function showResults() {
   if (pct >= 90) { title="🌟 Spelling Star! 🌟"; emoji="⭐⭐⭐"; }
   else if (pct >= 70) { title="🎉 Great Work! 🎉"; emoji="⭐⭐"; }
   else { title="💪 Keep Trying! 💪"; emoji="⭐"; }
-  const totalLifetime = loadTotalStars();
+  // Award 1 star only if entire session: all correct + zero hints/reveals
+  const perfectRun = wrongWords.length === 0;
+  const oldTotal = loadTotalStars();
+  let newTotal = oldTotal;
+  if (perfectRun) {
+    newTotal = oldTotal + 1;
+    saveTotalStars(newTotal);
+    checkMilestones(oldTotal, newTotal);
+  }
+  const totalLifetime = newTotal;
   const badge = getHighestBadge(totalLifetime);
   document.getElementById('results-title').textContent = title;
   document.getElementById('results-emoji').textContent = emoji;
   document.getElementById('results-summary').textContent = `You got ${stars} out of ${total} correct! (${pct}%)`;
-  document.getElementById('results-total-stars').innerHTML =
-    `累積星星：⭐ ${totalLifetime}　${badge ? badge.badge + ' ' + badge.title : ''}`;
+  const starEarned = perfectRun
+    ? `🌟 完美通關！獲得 1 顆星！累積：⭐ ${totalLifetime} ${badge ? badge.badge : ''}`
+    : `未達全對零提示，本局不計星。累積：⭐ ${totalLifetime} ${badge ? badge.badge : ''}`;
+  document.getElementById('results-total-stars').innerHTML = starEarned;
   const bar = document.getElementById('results-bar'); bar.style.width = '0%'; setTimeout(() => bar.style.width = pct + '%', 100);
   const grid = document.getElementById('results-grid'); grid.innerHTML = '';
   practiceWords.forEach(w => {
