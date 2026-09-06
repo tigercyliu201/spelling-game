@@ -240,10 +240,10 @@ const MILESTONES = [
 ];
 
 function loadTotalStars() {
-  try { return parseInt(localStorage.getItem('spellingStars') || '0', 10); } catch(e) { return 0; }
+  try { return parseInt(localStorage.getItem('spellingStarsG3') || '0', 10); } catch(e) { return 0; }
 }
 function saveTotalStars(n) {
-  try { localStorage.setItem('spellingStars', String(n)); } catch(e) {}
+  try { localStorage.setItem('spellingStarsG3', String(n)); } catch(e) {}
 }
 function getUnlockedMilestones(n) {
   return MILESTONES.filter(m => n >= m.at);

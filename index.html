@@ -386,10 +386,10 @@ const MILESTONES = [
   { at:50,  badge:"🥇", title:"Gold Master!",        sub:"50 顆星！傳說中的拼字王者！",   color:"#ffd700" },
 ];
 function loadTotalStars() {
-  try { return parseInt(localStorage.getItem('spellingStars') || '0', 10); } catch(e) { return 0; }
+  try { return parseInt(localStorage.getItem('spellingStarsG2') || '0', 10); } catch(e) { return 0; }
 }
 function saveTotalStars(n) {
-  try { localStorage.setItem('spellingStars', String(n)); } catch(e) {}
+  try { localStorage.setItem('spellingStarsG2', String(n)); } catch(e) {}
 }
 function getUnlockedMilestones(n) { return MILESTONES.filter(m => n >= m.at); }
 function getHighestBadge(n) { const u = getUnlockedMilestones(n); return u.length ? u[u.length-1] : null; }
