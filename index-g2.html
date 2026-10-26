@@ -252,6 +252,16 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
 .milestone-row { display: flex; align-items: center; gap: 8px; }
 .milestone-done { color: #2e7d32; font-weight: bold; }
 .milestone-lock { color: #bbb; }
+/* ── TYPING MODE ── */
+.letter-box {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 52px; margin: 4px; border-radius: 10px;
+  border: 3px solid #ccc; position: relative; cursor: text;
+  transition: background 0.15s, border-color 0.15s;
+}
+.letter-boxes-wrap { display: flex; flex-wrap: wrap; justify-content: center; padding: 16px 8px; min-height: 80px; background: #fafafa; border-radius: 14px; margin: 12px 0; border: 2px dashed #ddd; }
+.letter-box.cursor-pos::after { content: ''; display: block; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 2px; height: 22px; background: #764ba2; animation: blink 1s step-end infinite; border-radius: 2px; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 /* ── confetti ── */
 .confetti-piece {
   position: fixed; width: 10px; height: 10px; border-radius: 2px;
@@ -291,8 +301,9 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
   <div id="week-grid" class="week-grid"></div>
 
   <div class="btn-row" style="margin-top:22px">
-    <button class="btn btn-success" onclick="startGame('study')">📖 Study First</button>
-    <button class="btn btn-primary" onclick="startGame('practice')">🎮 Play Game!</button>
+    <button class="btn btn-success"  onclick="startGame('study')">📖 Study First</button>
+    <button class="btn btn-primary"  onclick="startGame('practice')">🎮 Play Game!</button>
+    <button class="btn btn-info"     onclick="startGame('typing')">⌨️ Type It!</button>
   </div>
 </div>
 </div>
@@ -375,8 +386,49 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
   <div id="results-total-stars" style="text-align:center;margin:10px 0;font-size:1em;color:#764ba2;font-weight:bold"></div>
   <div class="results-grid" id="results-grid"></div>
   <div class="btn-row" style="margin-top:22px">
-    <button class="btn btn-primary" onclick="startGame('practice')">🔄 Play Again</button>
+    <button class="btn btn-primary" onclick="startGame(gameMode)">🔄 Play Again</button>
     <button class="btn btn-success" onclick="showScreen('welcome')">🏠 Home</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-typing" class="screen">
+<div class="card">
+  <div class="top-bar">
+    <span class="progress-text" id="type-prog">1 / 10</span>
+    <span class="stars-display"  id="type-stars">⭐ 0</span>
+    <span id="type-total-stars" style="font-size:0.88em;color:#888;font-weight:bold"></span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="toggleSound()" title="Sound ON"
+        style="background:none;border:none;font-size:1.4em;cursor:pointer;padding:2px 6px;border-radius:8px;transition:background 0.2s"
+        onmouseover="this.style.background='#eee'" onmouseout="this.style.background='none'">🔊</button>
+      <button class="btn btn-secondary" onclick="showScreen('welcome')" style="padding:7px 16px;font-size:0.88em">← Exit</button>
+    </div>
+  </div>
+  <div class="week-label" id="type-week-label"></div>
+  <div id="type-def-card" class="hint-card definition">
+    <div class="hint-label">📖 Definition</div>
+    <div id="type-def-text"></div>
+  </div>
+  <div id="typing-boxes-wrap" class="letter-boxes-wrap" onclick="focusTypingInput()">
+    <span style="color:#ccc;font-size:0.95em">loading…</span>
+  </div>
+  <input type="text" id="typing-hidden-input"
+    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+    style="position:fixed;left:-9999px;opacity:0;width:1px;height:1px"
+    oninput="onTypingInput(this.value)" onkeydown="onTypingKeydown(event)">
+  <div class="feedback" id="type-feedback"></div>
+  <div class="reveal-area">
+    <button class="btn btn-reveal" id="type-reveal-btn" onclick="revealTypingWord()" style="font-size:0.9em;padding:8px 18px">
+      👁 Show Word (uses 1 hint)
+    </button>
+    <div id="type-revealed-area" style="margin-top:8px"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-warning"   id="type-hint-btn"  onclick="useTypingHint()">💡 Hint (3)</button>
+    <button class="btn btn-secondary"                     onclick="clearTypingInput()">🔄 Clear</button>
+    <button class="btn btn-primary"   id="type-check-btn" onclick="checkTypingAnswer()">✔ Check!</button>
+    <button class="btn btn-success"   id="type-next-btn"  onclick="nextWord()" style="display:none">Next ▶</button>
   </div>
 </div>
 </div>
@@ -819,6 +871,10 @@ let answered = false;
 let hintMode = 'ex';    // 'ex' or 'def'
 let wordRevealed = false;
 let currentForm = 'present'; // 'present' or 'past'
+let gameMode = 'practice';  // 'practice' or 'typing'
+let typingInput = '';
+let typingAnswered = false;
+let typingHintLetters = 0;
 
 let studyWords = [];
 let studyIdx = 0;
@@ -890,7 +946,13 @@ function startGame(mode) {
     studyIdx = 0;
     renderStudyWord();
     showScreen('study');
+  } else if (mode === 'typing') {
+    gameMode = 'typing';
+    practiceWords = shuffle([...words]);
+    currentWordIdx = 0; stars = 0; hintsLeft = 3; wrongWords = [];
+    renderTypingWord(); showScreen('typing');
   } else {
+    gameMode = 'practice';
     practiceWords = shuffle([...words]);
     currentWordIdx = 0;
     stars = 0;
@@ -1279,6 +1341,7 @@ function useHint() {
 function nextWord() {
   currentWordIdx++;
   if (currentWordIdx >= practiceWords.length) showResults();
+  else if (gameMode === 'typing') renderTypingWord();
   else renderPracticeWord();
 }
 
@@ -1472,6 +1535,177 @@ function speakWord(word, zh, delayMs = 0) {
 // ======================================================
 // UTILS
 // ======================================================
+// ── TYPING MODE ──
+function getLetterTypes(syl, t) {
+  const result = [];
+  syl.forEach((s, i) => { for (let c = 0; c < s.length; c++) result.push(t[i]); });
+  return result;
+}
+
+function renderTypingWord() {
+  const w = practiceWords[currentWordIdx];
+  typingInput = ''; typingAnswered = false; typingHintLetters = 0; wordRevealed = false;
+  document.getElementById('type-prog').textContent = `${currentWordIdx+1} / ${practiceWords.length}`;
+  document.getElementById('type-stars').textContent = `⭐ ${stars}`;
+  document.getElementById('type-total-stars').textContent = `累積 ${loadTotalStars()}⭐`;
+  currentForm = w.past ? (Math.random() < 0.5 ? 'past' : 'present') : 'present';
+  w._testForm = currentForm;
+  document.getElementById('type-week-label').textContent = currentForm === 'past'
+    ? `${w.weekKey} · ${w.weekTitle} · 📝 過去式`
+    : `${w.weekKey} · ${w.weekTitle}`;
+  document.getElementById('type-feedback').textContent = '';
+  document.getElementById('type-feedback').className = 'feedback';
+  document.getElementById('type-check-btn').style.display = '';
+  document.getElementById('type-next-btn').style.display = 'none';
+  document.getElementById('type-hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('type-hint-btn').disabled = hintsLeft === 0;
+  document.getElementById('type-reveal-btn').style.display = '';
+  document.getElementById('type-revealed-area').innerHTML = '';
+  const card = document.getElementById('type-def-card');
+  card.className = 'hint-card definition';
+  card.innerHTML = `<div class="hint-label">📖 Definition</div><div id="type-def-text">${w.def}</div>`;
+  updateTypingBoxes();
+  focusTypingInput();
+}
+
+function updateTypingBoxes() {
+  if (!practiceWords.length) return;
+  const w = practiceWords[currentWordIdx];
+  const _syl = currentForm === 'past' ? w.pastSyl : w.syl;
+  const _t   = currentForm === 'past' ? w.pastT   : w.t;
+  const letterTypes = getLetterTypes(_syl, _t);
+  const wrap = document.getElementById('typing-boxes-wrap');
+  if (!wrap) return;
+  const cursorPos = typingAnswered ? -1 : typingInput.length;
+  wrap.innerHTML = letterTypes.map((type, i) => {
+    const m = TYPE_META[type] || TYPE_META.r;
+    const letter = typingInput[i] || '';
+    const isCursor = i === cursorPos;
+    const isHintLocked = i < typingHintLetters;
+    let bg = letter ? m.bg : (isCursor ? '#f0f4ff' : '#fff');
+    let borderColor = letter ? m.border : (isCursor ? '#764ba2' : '#ddd');
+    let textColor = letter ? m.color : 'transparent';
+    const lockMark = isHintLocked && letter ? `<span style="position:absolute;top:2px;right:3px;font-size:0.45em;opacity:0.5">💡</span>` : '';
+    return `<div class="letter-box${isCursor ? ' cursor-pos' : ''}"
+      style="border-color:${borderColor};background:${bg}">
+      ${lockMark}
+      <span style="color:${textColor};font-size:1.5em;font-weight:bold;line-height:1">${letter}</span>
+    </div>`;
+  }).join('');
+}
+
+function focusTypingInput() {
+  const inp = document.getElementById('typing-hidden-input');
+  if (inp) { inp.value = typingInput; setTimeout(() => inp.focus(), 80); }
+}
+
+function onTypingInput(value) {
+  if (typingAnswered) { return; }
+  const w = practiceWords[currentWordIdx];
+  const _word = currentForm === 'past' ? w.past : w.w;
+  const wordLen = _word.length;
+  const cleaned = value.toLowerCase().replace(/[^a-z]/g, '').slice(0, wordLen);
+  const minLen = typingHintLetters;
+  typingInput = cleaned.length < minLen ? _word.slice(0, minLen) : cleaned;
+  const inp = document.getElementById('typing-hidden-input');
+  if (inp) inp.value = typingInput;
+  updateTypingBoxes();
+}
+
+function onTypingKeydown(e) {
+  if (e.key === 'Enter' && !typingAnswered) { checkTypingAnswer(); return; }
+  if (e.key === 'Backspace' && typingInput.length <= typingHintLetters) { e.preventDefault(); }
+}
+
+function clearTypingInput() {
+  if (typingAnswered) return;
+  typingInput = typingInput.slice(0, typingHintLetters);
+  const inp = document.getElementById('typing-hidden-input');
+  if (inp) { inp.value = typingInput; inp.focus(); }
+  updateTypingBoxes();
+}
+
+function checkTypingAnswer() {
+  if (typingAnswered) return;
+  const w = practiceWords[currentWordIdx];
+  const _word = currentForm === 'past' ? w.past : w.w;
+  const _zh   = currentForm === 'past' ? `${w.zh}（過去式）` : w.zh;
+  if (!typingInput) {
+    document.getElementById('type-feedback').textContent = '⚠️ Type the word first!';
+    document.getElementById('type-feedback').className = 'feedback err'; return;
+  }
+  if (typingInput.length < _word.length) {
+    document.getElementById('type-feedback').textContent = '⚠️ Word is not complete yet!';
+    document.getElementById('type-feedback').className = 'feedback err'; return;
+  }
+  if (typingInput === _word) {
+    typingAnswered = true; sfxCorrect(); speakWord(_word, _zh, 600);
+    document.getElementById('type-feedback').textContent = '🎉 Correct! Awesome! ⭐';
+    document.getElementById('type-feedback').className = 'feedback ok';
+    if (!wordRevealed) stars++;
+    document.getElementById('type-stars').textContent = `⭐ ${stars}`;
+    document.getElementById('type-check-btn').style.display = 'none';
+    document.getElementById('type-next-btn').style.display = '';
+    document.getElementById('type-hint-btn').disabled = true;
+    document.getElementById('type-reveal-btn').style.display = 'none';
+    const emojiHtml = w.emoji ? `<span class="word-emoji">${w.emoji}</span>` : '';
+    document.getElementById('type-revealed-area').innerHTML = `${emojiHtml}<div class="revealed-word">✅ ${_word}</div>`;
+    const card = document.getElementById('type-def-card');
+    card.className = 'info-box green'; card.innerHTML = buildWordTip(w);
+    document.querySelectorAll('#typing-boxes-wrap .letter-box').forEach(b => {
+      b.style.borderColor = '#43a047'; b.style.background = '#e8f5e9';
+    });
+  } else {
+    sfxWrong(); speakWord(w.w, w.zh, 500);
+    document.getElementById('type-feedback').textContent = '❌ Not quite! Try again 💪';
+    document.getElementById('type-feedback').className = 'feedback err';
+    if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+    document.querySelectorAll('#typing-boxes-wrap .letter-box').forEach(b => {
+      b.style.borderColor = '#e53935'; b.style.background = '#ffebee';
+    });
+    setTimeout(() => {
+      typingInput = typingInput.slice(0, typingHintLetters);
+      const inp = document.getElementById('typing-hidden-input');
+      if (inp) { inp.value = typingInput; inp.focus(); }
+      updateTypingBoxes();
+    }, 600);
+  }
+}
+
+function useTypingHint() {
+  if (hintsLeft <= 0 || typingAnswered) return;
+  const w = practiceWords[currentWordIdx];
+  const _word = currentForm === 'past' ? w.past : w.w;
+  if (typingHintLetters >= _word.length) return;
+  hintsLeft--;
+  sfxHint();
+  typingHintLetters++;
+  typingInput = _word.slice(0, Math.max(typingInput.length, typingHintLetters));
+  document.getElementById('type-hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('type-hint-btn').disabled = hintsLeft === 0;
+  if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+  const inp = document.getElementById('typing-hidden-input');
+  if (inp) { inp.value = typingInput; inp.focus(); }
+  updateTypingBoxes();
+}
+
+function revealTypingWord() {
+  if (wordRevealed || typingAnswered) return;
+  if (hintsLeft <= 0) {
+    document.getElementById('type-feedback').textContent = '⚠️ No hints left!';
+    document.getElementById('type-feedback').className = 'feedback err'; return;
+  }
+  hintsLeft--; wordRevealed = true;
+  const w = practiceWords[currentWordIdx];
+  const _revW = currentForm === 'past' ? w.past : w.w;
+  document.getElementById('type-hint-btn').textContent = `💡 Hint (${hintsLeft})`;
+  document.getElementById('type-hint-btn').disabled = hintsLeft === 0;
+  document.getElementById('type-reveal-btn').style.display = 'none';
+  document.getElementById('type-revealed-area').innerHTML = `<div class="revealed-word">🔍 ${_revW}</div>`;
+  if (!wrongWords.includes(w.w)) wrongWords.push(w.w);
+}
+// ── END TYPING MODE ──
+
 function shuffle(arr) {
   for (let i = arr.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
   return arr;
