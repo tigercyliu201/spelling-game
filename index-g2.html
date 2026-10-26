@@ -353,9 +353,14 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
 
   <!-- Reveal word button (costs a hint) -->
   <div class="reveal-area">
-    <button class="btn btn-reveal" id="reveal-btn" onclick="revealWord()" style="font-size:0.9em;padding:8px 18px">
-      👁 Show Word (uses 1 hint)
-    </button>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-reveal" id="reveal-btn" onclick="revealWord()" style="font-size:0.9em;padding:8px 18px">
+        👁 Show Word (uses 1 hint)
+      </button>
+      <button class="btn btn-info" id="prac-speak-btn" onclick="" style="font-size:0.9em;padding:8px 18px">
+        🔊 Pronounce
+      </button>
+    </div>
     <div id="revealed-area" style="margin-top:8px"></div>
   </div>
 
@@ -419,9 +424,14 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
     oninput="onTypingInput(this.value)" onkeydown="onTypingKeydown(event)">
   <div class="feedback" id="type-feedback"></div>
   <div class="reveal-area">
-    <button class="btn btn-reveal" id="type-reveal-btn" onclick="revealTypingWord()" style="font-size:0.9em;padding:8px 18px">
-      👁 Show Word (uses 1 hint)
-    </button>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-reveal" id="type-reveal-btn" onclick="revealTypingWord()" style="font-size:0.9em;padding:8px 18px">
+        👁 Show Word (uses 1 hint)
+      </button>
+      <button class="btn btn-info" id="type-speak-btn" onclick="" style="font-size:0.9em;padding:8px 18px">
+        🔊 Pronounce
+      </button>
+    </div>
     <div id="type-revealed-area" style="margin-top:8px"></div>
   </div>
   <div class="btn-row">
@@ -1153,6 +1163,9 @@ function renderPracticeWord() {
   document.getElementById('hint-btn').disabled = hintsLeft === 0;
   document.getElementById('reveal-btn').style.display = '';
   document.getElementById('revealed-area').innerHTML = '';
+  const _pracSpeakW = currentForm === 'past' && w.past ? w.past : w.w;
+  const _pracSpeakZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
+  document.getElementById('prac-speak-btn').onclick = () => speakWord(_pracSpeakW, _pracSpeakZ, 0);
 
   // Rebuild hint card structure (may have been replaced by outerHTML on prev word)
   document.getElementById('hint-card').className = 'hint-card example';
@@ -1561,6 +1574,9 @@ function renderTypingWord() {
   document.getElementById('type-hint-btn').disabled = hintsLeft === 0;
   document.getElementById('type-reveal-btn').style.display = '';
   document.getElementById('type-revealed-area').innerHTML = '';
+  const _typSpeakW = currentForm === 'past' && w.past ? w.past : w.w;
+  const _typSpeakZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
+  document.getElementById('type-speak-btn').onclick = () => speakWord(_typSpeakW, _typSpeakZ, 0);
   const card = document.getElementById('type-def-card');
   card.className = 'hint-card definition';
   card.innerHTML = `<div class="hint-label">📖 Definition</div><div id="type-def-text">${w.def}</div>`;
