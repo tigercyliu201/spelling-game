@@ -291,12 +291,12 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
   </div>
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
     <span style="color:#555;font-weight:bold">Random</span>
-    <input id="wc-input" type="number" min="1" max="999" placeholder="e.g. 10"
+    <input id="wc-input" type="number" min="1" max="999" value="10"
       style="width:80px;padding:10px;font-size:1.1em;border:2px solid #b39ddb;border-radius:10px;text-align:center;outline:none"
       oninput="document.getElementById('wc-go-btn').disabled=!this.value||+this.value<1"
       onkeydown="if(event.key==='Enter'&&this.value&&+this.value>=1)confirmWordCount(+this.value)">
     <span style="color:#555;font-weight:bold">words</span>
-    <button class="btn btn-info" id="wc-go-btn" onclick="confirmWordCount(+document.getElementById('wc-input').value)" disabled style="padding:10px 20px">Go!</button>
+    <button class="btn btn-info" id="wc-go-btn" onclick="confirmWordCount(+document.getElementById('wc-input').value)" style="padding:10px 20px">Go!</button>
   </div>
   <div class="btn-row" style="margin-top:24px">
     <button class="btn btn-secondary" onclick="showScreen('welcome')">◀ Back</button>
@@ -864,8 +864,8 @@ function pickWordCount(mode) {
   const labels = { practice: '🎮 Play Game!', typing: '⌨️ Type It!', dictation: '✏️ Dictation' };
   document.getElementById('wc-title').textContent = labels[mode] || mode;
   document.getElementById('wc-total').textContent = words.length;
-  document.getElementById('wc-input').value = '';
-  document.getElementById('wc-go-btn').disabled = true;
+  document.getElementById('wc-input').value = '10';
+  document.getElementById('wc-go-btn').disabled = false;
   showScreen('word-count');
 }
 
