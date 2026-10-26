@@ -304,6 +304,7 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
     <button class="btn btn-success"  onclick="startGame('study')">📖 Study First</button>
     <button class="btn btn-primary"  onclick="startGame('practice')">🎮 Play Game!</button>
     <button class="btn btn-info"     onclick="startGame('typing')">⌨️ Type It!</button>
+    <button class="btn btn-warning"  onclick="startGame('dictation')">✏️ Dictation</button>
   </div>
 </div>
 </div>
@@ -393,6 +394,34 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
   <div class="btn-row" style="margin-top:22px">
     <button class="btn btn-primary" onclick="startGame(gameMode)">🔄 Play Again</button>
     <button class="btn btn-success" onclick="showScreen('welcome')">🏠 Home</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-dictation" class="screen">
+<div class="card">
+  <div class="top-bar">
+    <span class="progress-text" id="dict-prog">1 / 10</span>
+    <span style="font-size:0.88em;color:#888;font-weight:bold" id="dict-counter"></span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="toggleSound()" title="Sound ON"
+        style="background:none;border:none;font-size:1.4em;cursor:pointer;padding:2px 6px;border-radius:8px;transition:background 0.2s"
+        onmouseover="this.style.background='#eee'" onmouseout="this.style.background='none'">🔊</button>
+      <button class="btn btn-secondary" onclick="showScreen('welcome')" style="padding:7px 16px;font-size:0.88em">← Exit</button>
+    </div>
+  </div>
+  <div class="week-label" id="dict-week-label"></div>
+  <div id="dict-def-card" class="hint-card definition">
+    <div class="hint-label">📖 Definition</div>
+    <div id="dict-def-text"></div>
+  </div>
+  <div style="text-align:center;font-size:0.82em;color:#aaa;margin:6px 0">✏️ 請在紙上默寫此單字</div>
+  <div id="dict-boxes-wrap" class="letter-boxes-wrap"></div>
+  <div id="dict-answer-area" style="text-align:center;margin:10px 0;min-height:60px"></div>
+  <div class="btn-row">
+    <button class="btn btn-info"      id="dict-speak-btn" onclick="">🔊 Pronounce</button>
+    <button class="btn btn-reveal"    id="dict-show-btn"  onclick="showDictAnswer()">👁 Show Answer</button>
+    <button class="btn btn-success"   id="dict-next-btn"  onclick="nextDictWord()">Next ▶</button>
   </div>
 </div>
 </div>
@@ -881,10 +910,13 @@ let answered = false;
 let hintMode = 'ex';    // 'ex' or 'def'
 let wordRevealed = false;
 let currentForm = 'present'; // 'present' or 'past'
-let gameMode = 'practice';  // 'practice' or 'typing'
+let gameMode = 'practice';  // 'practice' | 'typing' | 'dictation'
 let typingInput = '';
 let typingAnswered = false;
 let typingHintLetters = 0;
+let dictWords = [];
+let dictIdx = 0;
+let dictAnswerShown = false;
 
 let studyWords = [];
 let studyIdx = 0;
@@ -956,6 +988,10 @@ function startGame(mode) {
     studyIdx = 0;
     renderStudyWord();
     showScreen('study');
+  } else if (mode === 'dictation') {
+    gameMode = 'dictation';
+    dictWords = shuffle([...words]); dictIdx = 0;
+    renderDictWord(); showScreen('dictation');
   } else if (mode === 'typing') {
     gameMode = 'typing';
     practiceWords = shuffle([...words]);
@@ -1548,6 +1584,85 @@ function speakWord(word, zh, delayMs = 0) {
 // ======================================================
 // UTILS
 // ======================================================
+// ── DICTATION MODE ──
+function renderDictWord() {
+  const w = dictWords[dictIdx];
+  dictAnswerShown = false;
+  currentForm = w.past ? (Math.random() < 0.5 ? 'past' : 'present') : 'present';
+  w._testForm = currentForm;
+
+  document.getElementById('dict-prog').textContent = `${dictIdx+1} / ${dictWords.length}`;
+  document.getElementById('dict-counter').textContent = `${dictWords.length} 題`;
+  document.getElementById('dict-week-label').textContent = currentForm === 'past'
+    ? `${w.weekKey} · ${w.weekTitle} · 📝 過去式`
+    : `${w.weekKey} · ${w.weekTitle}`;
+
+  const card = document.getElementById('dict-def-card');
+  card.className = 'hint-card definition';
+  card.innerHTML = `<div class="hint-label">📖 Definition</div><div id="dict-def-text">${w.def}</div>`;
+
+  const _syl = currentForm === 'past' ? w.pastSyl : w.syl;
+  const _t   = currentForm === 'past' ? w.pastT   : w.t;
+  const letterTypes = getLetterTypes(_syl, _t);
+  const wrap = document.getElementById('dict-boxes-wrap');
+  wrap.innerHTML = letterTypes.map(type => {
+    const m = TYPE_META[type] || TYPE_META.r;
+    return `<div class="letter-box" style="border-color:${m.border};background:#fff"></div>`;
+  }).join('');
+
+  document.getElementById('dict-answer-area').innerHTML = '';
+  document.getElementById('dict-show-btn').style.display = '';
+
+  const _spW = currentForm === 'past' && w.past ? w.past : w.w;
+  const _spZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
+  document.getElementById('dict-speak-btn').onclick = () => speakWord(_spW, _spZ, 0);
+
+  const nextBtn = document.getElementById('dict-next-btn');
+  nextBtn.textContent = dictIdx < dictWords.length - 1 ? 'Next ▶' : '🏁 Finish';
+}
+
+function showDictAnswer() {
+  if (dictAnswerShown) return;
+  dictAnswerShown = true;
+  const w = dictWords[dictIdx];
+  const _word = currentForm === 'past' && w.past ? w.past : w.w;
+  const _syl  = currentForm === 'past' && w.pastSyl ? w.pastSyl : w.syl;
+  const _t    = currentForm === 'past' && w.pastT   ? w.pastT   : w.t;
+  const _zh   = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
+
+  const letterTypes = getLetterTypes(_syl, _t);
+  const wrap = document.getElementById('dict-boxes-wrap');
+  let letterIdx = 0;
+  wrap.innerHTML = letterTypes.map(type => {
+    const m = TYPE_META[type] || TYPE_META.r;
+    const letter = _word[letterIdx++] || '';
+    return `<div class="letter-box" style="border-color:${m.border};background:${m.bg}">
+      <span style="color:${m.color};font-size:1.5em;font-weight:bold;line-height:1">${letter}</span>
+    </div>`;
+  }).join('');
+
+  const sylHTML = _syl.map((s, i) => {
+    const m = TYPE_META[_t[i]] || TYPE_META.r;
+    return `<span style="background:${m.bg};color:${m.color};border:2px solid ${m.border};padding:4px 10px;border-radius:8px;margin:3px;display:inline-block;font-size:1em;font-weight:bold">${s}</span>`;
+  }).join('');
+
+  speakWord(_word, _zh, 300);
+  document.getElementById('dict-show-btn').style.display = 'none';
+  document.getElementById('dict-answer-area').innerHTML = `
+    <div style="margin:8px 0">
+      <div style="font-size:1.8em;font-weight:bold;color:#3c1c7a;letter-spacing:2px">${w.emoji || ''} ${_word}</div>
+      <div style="color:#764ba2;font-weight:bold;margin:4px 0">${_zh}</div>
+      <div style="margin-top:8px">${sylHTML}</div>
+    </div>`;
+}
+
+function nextDictWord() {
+  dictIdx++;
+  if (dictIdx >= dictWords.length) { showScreen('welcome'); }
+  else renderDictWord();
+}
+// ── END DICTATION MODE ──
+
 // ── TYPING MODE ──
 function getLetterTypes(syl, t) {
   const result = [];
