@@ -272,9 +272,23 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
   <div id="dict-boxes-wrap" class="letter-boxes-wrap"></div>
   <div id="dict-answer-area" style="text-align:center;margin:10px 0;min-height:60px"></div>
   <div class="btn-row">
-    <button class="btn btn-info"      id="dict-speak-btn" onclick="">🔊 Pronounce</button>
-    <button class="btn btn-reveal"    id="dict-show-btn"  onclick="showDictAnswer()">👁 Show Answer</button>
-    <button class="btn btn-success"   id="dict-next-btn"  onclick="nextDictWord()">Next ▶</button>
+    <button class="btn btn-info"      id="dict-speak-btn"   onclick="">🔊 Pronounce</button>
+    <button class="btn btn-reveal"    id="dict-show-btn"    onclick="showDictAnswer()">👁 Show Answer</button>
+    <button class="btn btn-success"   id="dict-correct-btn" onclick="markDictWord(true)"  style="display:none">✅ 答對了！</button>
+    <button class="btn btn-primary"   id="dict-wrong-btn"   onclick="markDictWord(false)" style="display:none">❌ 答錯了</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-dict-results" class="screen">
+<div class="card">
+  <h2>✏️ Dictation Results</h2>
+  <div id="dict-results-summary" style="text-align:center;font-size:1.05em;color:#555;margin:8px 0"></div>
+  <div class="score-bar-wrap"><div class="score-bar" id="dict-results-bar" style="width:0%"></div></div>
+  <div class="results-grid" id="dict-results-grid" style="margin-top:14px"></div>
+  <div class="btn-row" style="margin-top:22px">
+    <button class="btn btn-primary" onclick="startGame('dictation')">🔄 再來一次</button>
+    <button class="btn btn-success" onclick="showScreen('welcome')">🏠 Home</button>
   </div>
 </div>
 </div>
@@ -768,6 +782,8 @@ let typingHintLetters = 0;
 let dictWords = [];
 let dictIdx = 0;
 let dictAnswerShown = false;
+let dictCorrect = [];
+let dictWrong = [];
 let studyWords = [];
 let studyIdx = 0;
 
@@ -822,7 +838,7 @@ function startGame(mode) {
     studyWords = words; studyIdx = 0; renderStudyWord(); showScreen('study');
   } else if (mode === 'dictation') {
     gameMode = 'dictation';
-    dictWords = shuffle([...words]); dictIdx = 0;
+    dictWords = shuffle([...words]); dictIdx = 0; dictCorrect = []; dictWrong = [];
     renderDictWord(); showScreen('dictation');
   } else if (mode === 'typing') {
     gameMode = 'typing';
@@ -1180,7 +1196,7 @@ function renderDictWord() {
   w._testForm = currentForm;
 
   document.getElementById('dict-prog').textContent = `${dictIdx+1} / ${dictWords.length}`;
-  document.getElementById('dict-counter').textContent = `${dictWords.length} 題`;
+  document.getElementById('dict-counter').textContent = `✅ ${dictCorrect.length}  ❌ ${dictWrong.length}`;
   document.getElementById('dict-week-label').textContent = currentForm === 'past'
     ? `${w.weekKey} · ${w.weekTitle} · 📝 過去式`
     : `${w.weekKey} · ${w.weekTitle}`;
@@ -1201,14 +1217,12 @@ function renderDictWord() {
 
   document.getElementById('dict-answer-area').innerHTML = '';
   document.getElementById('dict-show-btn').style.display = '';
+  document.getElementById('dict-correct-btn').style.display = 'none';
+  document.getElementById('dict-wrong-btn').style.display = 'none';
 
   const _spW = currentForm === 'past' && w.past ? w.past : w.w;
   const _spZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
   document.getElementById('dict-speak-btn').onclick = () => speakWord(_spW, _spZ, 0);
-
-  // update Next button label
-  const nextBtn = document.getElementById('dict-next-btn');
-  nextBtn.textContent = dictIdx < dictWords.length - 1 ? 'Next ▶' : '🏁 Finish';
 }
 
 function showDictAnswer() {
@@ -1239,6 +1253,8 @@ function showDictAnswer() {
 
   speakWord(_word, _zh, 300);
   document.getElementById('dict-show-btn').style.display = 'none';
+  document.getElementById('dict-correct-btn').style.display = '';
+  document.getElementById('dict-wrong-btn').style.display = '';
   document.getElementById('dict-answer-area').innerHTML = `
     <div style="margin:8px 0">
       <div style="font-size:1.8em;font-weight:bold;color:#3c1c7a;letter-spacing:2px">${w.emoji || ''} ${_word}</div>
@@ -1247,10 +1263,37 @@ function showDictAnswer() {
     </div>`;
 }
 
-function nextDictWord() {
+function markDictWord(correct) {
+  const w = dictWords[dictIdx];
+  const shownW = (w._testForm === 'past' && w.past) ? w.past : w.w;
+  if (correct) dictCorrect.push({ w, shownW }); else dictWrong.push({ w, shownW });
   dictIdx++;
-  if (dictIdx >= dictWords.length) { showScreen('welcome'); }
+  if (dictIdx >= dictWords.length) showDictResults();
   else renderDictWord();
+}
+
+function showDictResults() {
+  sfxCelebration();
+  const total = dictWords.length;
+  const pct = Math.round(dictCorrect.length / total * 100);
+  document.getElementById('dict-results-summary').textContent =
+    `答對 ${dictCorrect.length} / ${total} 題 (${pct}%)`;
+  const bar = document.getElementById('dict-results-bar');
+  bar.style.width = '0%'; setTimeout(() => bar.style.width = pct + '%', 100);
+  const grid = document.getElementById('dict-results-grid'); grid.innerHTML = '';
+  const mkItem = (entry, ok) => {
+    const w = entry.w; const shownW = entry.shownW;
+    const form = w._testForm || 'present';
+    const _syl = form === 'past' && w.pastSyl ? w.pastSyl : w.syl;
+    const tenseTag = form === 'past' && w.past
+      ? '<span style="color:#bf360c;font-size:0.72em;margin-left:4px;font-weight:bold">過去式</span>' : '';
+    const el = mkEl('div', 'result-item ' + (ok ? 'ok-r' : 'err-r'));
+    el.innerHTML = `${ok ? '✅' : '❌'} <strong>${shownW}</strong><span style="color:#666;font-size:0.82em;margin-left:4px">${_syl.join('·')}</span>${tenseTag}`;
+    return el;
+  };
+  dictCorrect.forEach(e => grid.appendChild(mkItem(e, true)));
+  dictWrong.forEach(e => grid.appendChild(mkItem(e, false)));
+  showScreen('dict-results');
 }
 // ── END DICTATION MODE ──
 
