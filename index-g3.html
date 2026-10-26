@@ -1030,7 +1030,7 @@ function renderPracticeWord() {
   document.getElementById('revealed-area').innerHTML = '';
   const _pracSpeakW = currentForm === 'past' && w.past ? w.past : w.w;
   const _pracSpeakZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
-  document.getElementById('prac-speak-btn').onclick = () => speakWord(_pracSpeakW.replace(/'/g,"\\'"), _pracSpeakZ.replace(/'/g,"\\'"), 0);
+  document.getElementById('prac-speak-btn').onclick = () => speakWord(_pracSpeakW, '', 0);
   document.getElementById('hint-card').className = 'hint-card example';
   document.getElementById('hint-card').innerHTML = `
     <div class="hint-label" id="hint-label">📝 Example Sentence</div>
@@ -1267,7 +1267,7 @@ function renderDictWord() {
 
   const _spW = currentForm === 'past' && w.past ? w.past : w.w;
   const _spZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
-  document.getElementById('dict-speak-btn').onclick = () => speakWord(_spW, _spZ, 0);
+  document.getElementById('dict-speak-btn').onclick = () => speakWord(_spW, '', 0);
 }
 
 function showDictAnswer() {
@@ -1370,7 +1370,7 @@ function renderTypingWord() {
   document.getElementById('type-revealed-area').innerHTML = '';
   const _typSpeakW = currentForm === 'past' && w.past ? w.past : w.w;
   const _typSpeakZ = currentForm === 'past' && w.past ? `${w.zh}（過去式）` : w.zh;
-  document.getElementById('type-speak-btn').onclick = () => speakWord(_typSpeakW, _typSpeakZ, 0);
+  document.getElementById('type-speak-btn').onclick = () => speakWord(_typSpeakW, '', 0);
   const card = document.getElementById('type-def-card');
   card.className = 'hint-card definition';
   card.innerHTML = `<div class="hint-label">📖 Definition</div><div id="type-def-text">${w.def}</div>`;
