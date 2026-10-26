@@ -167,9 +167,9 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
   <div id="week-grid" class="week-grid"></div>
   <div class="btn-row" style="margin-top:22px">
     <button class="btn btn-success"  onclick="startGame('study')">📖 Study First</button>
-    <button class="btn btn-primary"  onclick="startGame('practice')">🎮 Play Game!</button>
-    <button class="btn btn-info"     onclick="startGame('typing')">⌨️ Type It!</button>
-    <button class="btn btn-warning"  onclick="startGame('dictation')">✏️ Dictation</button>
+    <button class="btn btn-primary"  onclick="pickWordCount('practice')">🎮 Play Game!</button>
+    <button class="btn btn-info"     onclick="pickWordCount('typing')">⌨️ Type It!</button>
+    <button class="btn btn-warning"  onclick="pickWordCount('dictation')">✏️ Dictation</button>
   </div>
 </div>
 </div>
@@ -276,6 +276,30 @@ h2 { font-size: 1.6em; text-align: center; color: #764ba2; margin-bottom: 14px; 
     <button class="btn btn-reveal"    id="dict-show-btn"    onclick="showDictAnswer()">👁 Show Answer</button>
     <button class="btn btn-success"   id="dict-correct-btn" onclick="markDictWord(true)"  style="display:none">✅ Correct!</button>
     <button class="btn btn-primary"   id="dict-wrong-btn"   onclick="markDictWord(false)" style="display:none">❌ Wrong</button>
+  </div>
+</div>
+</div>
+
+<div id="screen-word-count" class="screen">
+<div class="card">
+  <h2 id="wc-title">🎮 Play Game!</h2>
+  <p style="text-align:center;color:#666;margin:4px 0 18px">How many words do you want to practice?</p>
+  <div style="text-align:center;margin-bottom:16px">
+    <button class="btn btn-primary" id="wc-all-btn" onclick="confirmWordCount(0)" style="font-size:1.05em;padding:12px 28px">
+      All words (<span id="wc-total">0</span>)
+    </button>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+    <span style="color:#555;font-weight:bold">Random</span>
+    <input id="wc-input" type="number" min="1" max="999" placeholder="e.g. 10"
+      style="width:80px;padding:10px;font-size:1.1em;border:2px solid #b39ddb;border-radius:10px;text-align:center;outline:none"
+      oninput="document.getElementById('wc-go-btn').disabled=!this.value||+this.value<1"
+      onkeydown="if(event.key==='Enter'&&this.value&&+this.value>=1)confirmWordCount(+this.value)">
+    <span style="color:#555;font-weight:bold">words</span>
+    <button class="btn btn-info" id="wc-go-btn" onclick="confirmWordCount(+document.getElementById('wc-input').value)" disabled style="padding:10px 20px">Go!</button>
+  </div>
+  <div class="btn-row" style="margin-top:24px">
+    <button class="btn btn-secondary" onclick="showScreen('welcome')">◀ Back</button>
   </div>
 </div>
 </div>
@@ -831,22 +855,43 @@ function showScreen(name) {
   if (name === 'welcome') updateWelcomeStarBar();
 }
 
-function startGame(mode) {
+let _pendingMode = '';
+
+function pickWordCount(mode) {
   const words = getActiveWords();
   if (!words.length) { alert('Please select at least one week!'); return; }
+  _pendingMode = mode;
+  const labels = { practice: '🎮 Play Game!', typing: '⌨️ Type It!', dictation: '✏️ Dictation' };
+  document.getElementById('wc-title').textContent = labels[mode] || mode;
+  document.getElementById('wc-total').textContent = words.length;
+  document.getElementById('wc-input').value = '';
+  document.getElementById('wc-go-btn').disabled = true;
+  showScreen('word-count');
+}
+
+function confirmWordCount(count) {
+  const words = getActiveWords();
+  const pool = shuffle([...words]);
+  const selected = (count > 0 && count < pool.length) ? pool.slice(0, count) : pool;
+  startGame(_pendingMode, selected);
+}
+
+function startGame(mode, wordList) {
+  const words = wordList || getActiveWords();
+  if (!words.length) { alert('Please select at least one week!'); return; }
   if (mode === 'study') {
-    studyWords = words; studyIdx = 0; renderStudyWord(); showScreen('study');
+    studyWords = getActiveWords(); studyIdx = 0; renderStudyWord(); showScreen('study');
   } else if (mode === 'dictation') {
     gameMode = 'dictation';
-    dictWords = shuffle([...words]); dictIdx = 0; dictCorrect = []; dictWrong = [];
+    dictWords = [...words]; dictIdx = 0; dictCorrect = []; dictWrong = [];
     renderDictWord(); showScreen('dictation');
   } else if (mode === 'typing') {
     gameMode = 'typing';
-    practiceWords = shuffle([...words]); currentWordIdx = 0; stars = 0; hintsLeft = 3; wrongWords = [];
+    practiceWords = [...words]; currentWordIdx = 0; stars = 0; hintsLeft = 3; wrongWords = [];
     renderTypingWord(); showScreen('typing');
   } else {
     gameMode = 'practice';
-    practiceWords = shuffle([...words]); currentWordIdx = 0; stars = 0; hintsLeft = 3; wrongWords = [];
+    practiceWords = [...words]; currentWordIdx = 0; stars = 0; hintsLeft = 3; wrongWords = [];
     renderPracticeWord(); showScreen('practice');
   }
 }
